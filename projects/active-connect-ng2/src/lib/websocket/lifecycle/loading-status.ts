@@ -1,4 +1,6 @@
-export class LoadingStatus {
+import { WebsocketClient } from '../client';
+
+export class LoadingStatus extends WebsocketClient {
   private __proto__: any;
   static loading: Map<string, boolean>;
   get isLoading(): boolean {
