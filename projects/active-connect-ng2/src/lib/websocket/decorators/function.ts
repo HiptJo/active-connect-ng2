@@ -13,15 +13,6 @@ export class DecorableFunction {
     const prototype = this.objConfig.target.prototype || this.objConfig.target;
     if (!prototype.___constructorOverridden) {
       prototype.___constructorOverridden = true;
-      const oldConstructor = this.objConfig.target.constructor;
-      this.objConfig.target.constructor = (...data: any[]) => {
-        const object = oldConstructor(...data);
-        if (!prototype.___data) {
-          prototype.___data = {};
-        }
-        prototype.___data._obj = object;
-        return object;
-      };
     }
   }
 
@@ -48,6 +39,9 @@ export class DecorableFunction {
    */
   private getBindObject(): any {
     const prototype = this.objConfig.target.prototype || this.objConfig.target;
+    console.log('bind obj:');
+    console.log(this.objConfig.target.prototype);
+    console.log(this.objConfig.target);
     return prototype.___data._obj;
   }
 }

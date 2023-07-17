@@ -7,7 +7,12 @@ export function Route(
     // method annotation
     const original = target[propertyKey];
     target[propertyKey] = async function execRoute(...data: any): Promise<any> {
-      if (loadingKey) this.loadingElements[loadingKey]++;
+      if (loadingKey) {
+        if (!this.loadingElements[loadingKey]) {
+          this.loadingElements[loadingKey] = 0;
+        }
+        this.loadingElements[loadingKey]++;
+      }
       const promise = original.bind(this)(...data);
       let res = null;
       if (this.client) {

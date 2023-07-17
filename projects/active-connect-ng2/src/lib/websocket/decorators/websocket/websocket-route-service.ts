@@ -1,6 +1,6 @@
 import { WebsocketClient } from '../../client';
 
 export interface WebsocketRouteService {
-  loadingElements: string[];
+  loadingElements: any;
   client: WebsocketClient;
 }

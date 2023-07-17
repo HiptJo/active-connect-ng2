@@ -26,7 +26,7 @@ export function Outbound(method: string, requestingRequired?: boolean) {
         if (!target.___requested) target.___requested = {};
         if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
-          this.client.send('request.' + method, null).then();
+          this.send('request.' + method, null).then();
         }
         if (!target.___data) target.___data = {};
         if (!target.___data[propertyKey]) {
