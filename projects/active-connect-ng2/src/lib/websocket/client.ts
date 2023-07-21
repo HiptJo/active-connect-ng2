@@ -163,11 +163,18 @@ export class WebsocketClient {
     method,
     value,
     messageId,
+    globalHash,
+    specificHash,
   }: {
     method: string;
     value: any;
     messageId: number | null;
+    globalHash: number | null;
+    specificHash: number | null;
   }) {
+    if (method == '___cache') {
+      this.handleOutboundCacheRequest(value);
+    }
     if (messageId) {
       const callback = this.expectedMethods.get(messageId);
       if (callback) {
@@ -182,7 +189,7 @@ export class WebsocketClient {
         } else {
           const out = WebsocketClient.outbounds.get(method);
           if (out) {
-            out(value);
+            out(value, globalHash, specificHash);
           } else {
             const handle = WebsocketClient.handles.get(method);
             if (handle) {
@@ -198,8 +205,36 @@ export class WebsocketClient {
     }
   }
 
-  private static outbounds: Map<string, (data: any) => void> = new Map();
-  static expectOutbound(method: string, callback: (data: any) => void) {
+  private handleOutboundCacheRequest(method: string) {
+    const item = localStorage.getItem('ac_oc_' + method);
+    if (item) {
+      const data: any = JSON.parse(item);
+      this.send('___cache', {
+        method,
+        globalHash: data.globalHash || null,
+        specificHash: data.specificHash || null,
+      });
+    } else {
+      this.send('___cache', {
+        method,
+        globalHash: null,
+        specificHash: null,
+      });
+    }
+  }
+
+  private static outbounds: Map<
+    string,
+    (data: any, globalHash: number | null, specificHash: number | null) => void
+  > = new Map();
+  static expectOutbound(
+    method: string,
+    callback: (
+      data: any,
+      globalHash: number | null,
+      specificHash: number | null
+    ) => void
+  ) {
     WebsocketClient.outbounds.set(method, callback);
   }
 
