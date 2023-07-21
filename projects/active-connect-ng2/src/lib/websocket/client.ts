@@ -1,3 +1,4 @@
+import { NgxIndexedDBService } from 'ngx-indexed-db';
 import { DecorableFunction } from './decorators/function';
 import { JsonParser } from './json/json-parser';
 
@@ -5,7 +6,12 @@ export class WebsocketClient {
   ws!: WebSocket;
   pool!: { WssConnected: boolean } | null;
 
-  constructor(private url?: string, private supportsCache?: boolean) {
+  constructor(
+    private url?: string,
+    private supportsCache?: boolean,
+    public dbService?: NgxIndexedDBService
+  ) {
+    if (supportsCache) this.initCache();
     if (!url) {
       let protocol;
       let port;
@@ -189,7 +195,7 @@ export class WebsocketClient {
         } else {
           const out = WebsocketClient.outbounds.get(method);
           if (out) {
-            out(value, globalHash, specificHash);
+            out(value, globalHash, specificHash, this);
           } else {
             const handle = WebsocketClient.handles.get(method);
             if (handle) {
@@ -206,13 +212,21 @@ export class WebsocketClient {
   }
 
   private handleOutboundCacheRequest(method: string) {
-    const item = localStorage.getItem('ac_oc_' + method);
-    if (item) {
-      const data: any = JSON.parse(item);
-      this.send('___cache', {
-        method,
-        globalHash: data.globalHash || null,
-        specificHash: data.specificHash || null,
+    if (this.dbService) {
+      this.dbService.getByKey('outbound', method).subscribe((item: any) => {
+        if (item) {
+          this.send('___cache', {
+            method,
+            globalHash: item.globalHash || null,
+            specificHash: item.specificHash || null,
+          });
+        } else {
+          this.send('___cache', {
+            method,
+            globalHash: null,
+            specificHash: null,
+          });
+        }
       });
     } else {
       this.send('___cache', {
@@ -220,19 +234,28 @@ export class WebsocketClient {
         globalHash: null,
         specificHash: null,
       });
+      console.error(
+        'Active-Connect: Caching not possible as the indexedDB has not been initialized'
+      );
     }
   }
 
   private static outbounds: Map<
     string,
-    (data: any, globalHash: number | null, specificHash: number | null) => void
+    (
+      data: any,
+      globalHash: number | null,
+      specificHash: number | null,
+      _this: WebsocketClient
+    ) => void
   > = new Map();
   static expectOutbound(
     method: string,
     callback: (
       data: any,
       globalHash: number | null,
-      specificHash: number | null
+      specificHash: number | null,
+      _this: WebsocketClient
     ) => void
   ) {
     WebsocketClient.outbounds.set(method, callback);
@@ -332,4 +355,6 @@ export class WebsocketClient {
     if (!restart) this.closed = true;
     this.ws.close();
   }
+
+  private initCache() {}
 }

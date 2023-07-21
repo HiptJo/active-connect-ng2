@@ -14,41 +14,46 @@ export function Outbound(
       function setOutbound(
         data: any,
         globalHash: number | null,
-        specificHash: number | null
+        specificHash: number | null,
+        _this: WebsocketClient
       ) {
         if (!target.___received) target.___received = {};
         if (!target.___data) target.___data = {};
         if (!target.___received) target.___received = {};
         if (!target.___requested) target.___requested = {};
         if (!cached) {
-          localStorage.removeItem('ac_oc_' + method);
+          if (_this.dbService) _this.dbService.deleteByKey('outbound', method);
         }
 
         if (data == 'cache_restore') {
-          const result = localStorage.getItem('ac_oc_' + method);
-          const data = result ? JsonParser.parse(result) : result;
-          target.___received[propertyKey] = true;
-          target.___data[propertyKey] = data.data;
-          target.loading.set(propertyKey, false);
+          if (_this.dbService) {
+            const result: any = _this.dbService.getByKey('outbound', method);
+            target.___received[propertyKey] = true;
+            target.___data[propertyKey] = result.data;
+            target.loading.set(propertyKey, false);
+          }
         } else if (data == 'cache_delete') {
-          localStorage.removeItem('ac_oc_' + method);
+          if (_this.dbService) _this.dbService.deleteByKey('outbound', method);
           target.___received[propertyKey] = false;
           target.___data[propertyKey] = undefined;
           target.loading.set(propertyKey, false);
         } else {
-          if (cached && globalHash && specificHash) {
-            localStorage.setItem(
-              'ac_oc_' + method,
-              JSON.stringify({
-                data,
-                globalHash,
-                specificHash,
-              })
-            );
-          }
           target.___received[propertyKey] = true;
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
+          if (cached && globalHash && specificHash) {
+            if (_this.dbService)
+              _this.dbService.update('outbound', {
+                method,
+                data,
+                globalHash,
+                specificHash,
+              });
+            else
+              console.error(
+                'Active-Connect: Caching not possible as the indexedDB has not been initialized'
+              );
+          }
         }
       }
     );
