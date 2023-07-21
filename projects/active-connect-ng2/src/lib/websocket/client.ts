@@ -5,7 +5,7 @@ export class WebsocketClient {
   ws!: WebSocket;
   pool!: { WssConnected: boolean } | null;
 
-  constructor(private url?: string) {
+  constructor(private url?: string, private supportsCache?: boolean) {
     if (!url) {
       let protocol;
       let port;
@@ -23,7 +23,7 @@ export class WebsocketClient {
       }
       this.url = protocol + '//' + document.location.hostname + port + '/wss';
     }
-    this.connect(this.url as string);
+    this.connect((this.url as string) + (supportsCache ? '?cache=true' : ''));
   }
 
   subject: any;
@@ -82,7 +82,7 @@ export class WebsocketClient {
 
   private create(url: string) {
     // create new connection
-    this.ws = new WebSocket(url);
+    this.ws = new WebSocket(url + (this.supportsCache ? '?cache=true' : ''));
     this.ws.onerror = (err) => {
       this.ws.close();
       console.log(err);
