@@ -3,11 +3,11 @@
   "version": "0.1.4",
   "peerDependencies": {
     "@angular/common": "^15.1.0",
-    "@angular/core": "^15.1.0"
+    "@angular/core": "^15.1.0",
+    "ngx-indexed-db": "^16.0.0"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
-    "ngx-indexed-db": "^16.0.0"
+    "tslib": "^2.3.0"
   },
   "sideEffects": false
 }
