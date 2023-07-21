@@ -31,9 +31,19 @@ export function Outbound(
             target.___received[propertyKey] = true;
             target.___data[propertyKey] = result.data;
             target.loading.set(propertyKey, false);
+          } else {
+            console.error(
+              'Active - Connect: Caching / restore not possible as the indexedDB is not accessible'
+            );
           }
         } else if (data == 'cache_delete') {
-          if (_this.dbService) _this.dbService.deleteByKey('outbound', method);
+          if (_this.dbService) {
+            _this.dbService.deleteByKey('outbound', method);
+          } else {
+            console.error(
+              'Active - Connect: Caching / restore not possible as the indexedDB is not accessible'
+            );
+          }
           target.___received[propertyKey] = false;
           target.___data[propertyKey] = undefined;
           target.loading.set(propertyKey, false);
@@ -42,17 +52,18 @@ export function Outbound(
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
           if (cached && globalHash && specificHash) {
-            if (_this.dbService)
+            if (_this.dbService) {
               _this.dbService.update('outbound', {
                 method,
                 data,
                 globalHash,
                 specificHash,
               });
-            else
+            } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
               );
+            }
           }
         }
       }
