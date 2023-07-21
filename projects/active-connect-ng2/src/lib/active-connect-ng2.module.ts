@@ -29,6 +29,5 @@ const dbConfig: DBConfig = {
 @NgModule({
   declarations: [],
   imports: [NgxIndexedDBModule.forRoot(dbConfig)],
-  exports: [NgxIndexedDBModule],
 })
 export class ActiveConnectNg2Module {}
