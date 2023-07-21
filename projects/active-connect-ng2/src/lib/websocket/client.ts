@@ -23,7 +23,7 @@ export class WebsocketClient {
       }
       this.url = protocol + '//' + document.location.hostname + port + '/wss';
     }
-    this.connect((this.url as string) + (supportsCache ? '?cache=true' : ''));
+    this.connect(this.url as string);
   }
 
   subject: any;
