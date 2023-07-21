@@ -1,5 +1,4 @@
 import { WebsocketClient } from '../../client';
-import { JsonParser } from '../../json/json-parser';
 
 export function Outbound(
   method: string,
@@ -22,15 +21,19 @@ export function Outbound(
         if (!target.___received) target.___received = {};
         if (!target.___requested) target.___requested = {};
         if (!cached) {
-          if (_this.dbService) _this.dbService.deleteByKey('outbound', method);
+          if (_this.dbService)
+            _this.dbService.deleteByKey('outbound', method).subscribe(() => {});
         }
 
         if (data == 'cache_restore') {
           if (_this.dbService) {
-            const result: any = _this.dbService.getByKey('outbound', method);
-            target.___received[propertyKey] = true;
-            target.___data[propertyKey] = result.data;
-            target.loading.set(propertyKey, false);
+            _this.dbService
+              .getByKey('outbound', method)
+              .subscribe((result: any) => {
+                target.___received[propertyKey] = true;
+                target.___data[propertyKey] = result.data;
+                target.loading.set(propertyKey, false);
+              });
           } else {
             console.error(
               'Active - Connect: Caching / restore not possible as the indexedDB is not accessible'
@@ -38,7 +41,7 @@ export function Outbound(
           }
         } else if (data == 'cache_delete') {
           if (_this.dbService) {
-            _this.dbService.deleteByKey('outbound', method);
+            _this.dbService.deleteByKey('outbound', method).subscribe(() => {});
           } else {
             console.error(
               'Active - Connect: Caching / restore not possible as the indexedDB is not accessible'
@@ -53,12 +56,15 @@ export function Outbound(
           target.loading.set(propertyKey, false);
           if (cached && globalHash && specificHash) {
             if (_this.dbService) {
-              _this.dbService.update('outbound', {
-                method,
-                data,
-                globalHash,
-                specificHash,
-              });
+              _this.dbService
+                .update('outbound', {
+                  method,
+                  data,
+                  globalHash,
+                  specificHash,
+                })
+                .subscribe(() => {});
+              console.log('updated outbound');
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
