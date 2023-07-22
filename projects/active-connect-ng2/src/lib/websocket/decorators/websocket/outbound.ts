@@ -59,11 +59,11 @@ export function Outbound(
             data.push(e);
           });
           updated?.forEach((e) => {
-            data = data.filter((d: any) => d.id == e.id);
+            data = data.filter((d: any) => d.id != e.id);
             data.push(e);
           });
           deleted?.forEach((e) => {
-            data = data.filter((d: any) => d.id == e.id);
+            data = data.filter((d: any) => d.id != e.id);
           });
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
