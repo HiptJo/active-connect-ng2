@@ -171,12 +171,18 @@ export class WebsocketClient {
     messageId,
     globalHash,
     specificHash,
+    inserted,
+    updated,
+    deleted,
   }: {
     method: string;
     value: any;
     messageId: number | null;
     globalHash: number | null;
     specificHash: number | null;
+    inserted: any[] | null;
+    updated: any[] | null;
+    deleted: any[] | null;
   }) {
     if (method == '___cache') {
       this.handleOutboundCacheRequest(value);
@@ -195,7 +201,15 @@ export class WebsocketClient {
         } else {
           const out = WebsocketClient.outbounds.get(method);
           if (out) {
-            out(value, globalHash, specificHash, this);
+            out(
+              value,
+              globalHash,
+              specificHash,
+              inserted,
+              updated,
+              deleted,
+              this
+            );
           } else {
             const handle = WebsocketClient.handles.get(method);
             if (handle) {
@@ -246,6 +260,9 @@ export class WebsocketClient {
       data: any,
       globalHash: number | null,
       specificHash: number | null,
+      inserted: any[] | null,
+      updated: any[] | null,
+      deleted: any[] | null,
       _this: WebsocketClient
     ) => void
   > = new Map();
@@ -255,6 +272,9 @@ export class WebsocketClient {
       data: any,
       globalHash: number | null,
       specificHash: number | null,
+      inserted: any[] | null,
+      updated: any[] | null,
+      deleted: any[] | null,
       _this: WebsocketClient
     ) => void
   ) {

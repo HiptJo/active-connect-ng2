@@ -14,6 +14,9 @@ export function Outbound(
         data: any,
         globalHash: number | null,
         specificHash: number | null,
+        inserted: any[] | null,
+        updated: any[] | null,
+        deleted: any[] | null,
         _this: WebsocketClient
       ) {
         if (!target.___received) target.___received = {};
@@ -50,6 +53,38 @@ export function Outbound(
           target.___received[propertyKey] = false;
           target.___data[propertyKey] = undefined;
           target.loading.set(propertyKey, false);
+        } else if (data == 'data_diff') {
+          var data = target.___data[propertyKey] || [];
+          inserted?.forEach((e) => {
+            data.push(e);
+          });
+          updated?.forEach((e) => {
+            data = data.filter((d: any) => d.id == e.id);
+            data.push(e);
+          });
+          deleted?.forEach((e) => {
+            data = data.filter((d: any) => d.id == e.id);
+          });
+          target.___data[propertyKey] = data;
+          target.loading.set(propertyKey, false);
+
+          if (cached && globalHash && specificHash) {
+            if (_this.dbService) {
+              _this.dbService
+                .update('outbound', {
+                  method,
+                  data,
+                  globalHash,
+                  specificHash,
+                })
+                .subscribe(() => {});
+              console.log('updated outbound');
+            } else {
+              console.error(
+                'Active-Connect: Caching not possible as the indexedDB has not been initialized'
+              );
+            }
+          }
         } else {
           target.___received[propertyKey] = true;
           target.___data[propertyKey] = data;
