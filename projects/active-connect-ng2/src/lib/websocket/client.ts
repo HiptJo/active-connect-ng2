@@ -169,7 +169,6 @@ export class WebsocketClient {
     method,
     value,
     messageId,
-    globalHash,
     specificHash,
     inserted,
     updated,
@@ -178,7 +177,6 @@ export class WebsocketClient {
     method: string;
     value: any;
     messageId: number | null;
-    globalHash: number | null;
     specificHash: number | null;
     inserted: any[] | null;
     updated: any[] | null;
@@ -201,15 +199,7 @@ export class WebsocketClient {
         } else {
           const out = WebsocketClient.outbounds.get(method);
           if (out) {
-            out(
-              value,
-              globalHash,
-              specificHash,
-              inserted,
-              updated,
-              deleted,
-              this
-            );
+            out(value, specificHash, inserted, updated, deleted, this);
           } else {
             const handle = WebsocketClient.handles.get(method);
             if (handle) {
@@ -231,13 +221,11 @@ export class WebsocketClient {
         if (item) {
           this.send('___cache', {
             method,
-            globalHash: item.globalHash || null,
             specificHash: item.specificHash || null,
           });
         } else {
           this.send('___cache', {
             method,
-            globalHash: null,
             specificHash: null,
           });
         }
@@ -245,7 +233,6 @@ export class WebsocketClient {
     } else {
       this.send('___cache', {
         method,
-        globalHash: null,
         specificHash: null,
       });
       console.error(
@@ -258,7 +245,6 @@ export class WebsocketClient {
     string,
     (
       data: any,
-      globalHash: number | null,
       specificHash: number | null,
       inserted: any[] | null,
       updated: any[] | null,
@@ -270,7 +256,6 @@ export class WebsocketClient {
     method: string,
     callback: (
       data: any,
-      globalHash: number | null,
       specificHash: number | null,
       inserted: any[] | null,
       updated: any[] | null,

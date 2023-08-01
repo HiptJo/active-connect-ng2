@@ -12,11 +12,6 @@ const dbConfig: DBConfig = {
         { name: 'method', keypath: 'method', options: { unique: true } },
         { name: 'data', keypath: 'data', options: { unique: false } },
         {
-          name: 'globalHash',
-          keypath: 'globalHash',
-          options: { unique: false },
-        },
-        {
           name: 'specificHash',
           keypath: 'specificHash',
           options: { unique: false },

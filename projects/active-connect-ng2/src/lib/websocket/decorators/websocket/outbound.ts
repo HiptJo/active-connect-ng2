@@ -12,7 +12,6 @@ export function Outbound(
       method,
       function setOutbound(
         data: any,
-        globalHash: number | null,
         specificHash: number | null,
         inserted: any[] | null,
         updated: any[] | null,
@@ -77,13 +76,12 @@ export function Outbound(
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
 
-          if (cached && globalHash && specificHash) {
+          if (cached && specificHash) {
             if (_this.dbService) {
               _this.dbService
                 .update('outbound', {
                   method,
                   data,
-                  globalHash,
                   specificHash,
                 })
                 .subscribe(() => {});
@@ -98,13 +96,12 @@ export function Outbound(
           target.___received[propertyKey] = true;
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
-          if (cached && globalHash && specificHash) {
+          if (cached && specificHash) {
             if (_this.dbService) {
               _this.dbService
                 .update('outbound', {
                   method,
                   data,
-                  globalHash,
                   specificHash,
                 })
                 .subscribe(() => {});
