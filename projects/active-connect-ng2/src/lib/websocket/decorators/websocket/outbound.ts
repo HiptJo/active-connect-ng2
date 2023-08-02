@@ -16,6 +16,7 @@ export function Outbound(
         inserted: any[] | null,
         updated: any[] | null,
         deleted: any[] | null,
+        length: number | null,
         _this: WebsocketClient
       ) {
         if (!target.___received) target.___received = {};
