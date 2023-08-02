@@ -16,6 +16,11 @@ const dbConfig: DBConfig = {
           keypath: 'specificHash',
           options: { unique: false },
         },
+        {
+          name: 'length',
+          keypath: 'length',
+          options: { unique: false },
+        },
       ],
     },
   ],
