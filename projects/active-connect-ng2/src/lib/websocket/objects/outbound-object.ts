@@ -1,4 +1,5 @@
 import { WebsocketClient } from 'active-connect-ng2';
+import { Observable, Observer } from 'rxjs';
 
 export interface IdObject {
   id: number;
@@ -73,6 +74,7 @@ export class OutboundObject<T extends IdObject> {
         } else if (data == 'data_group') {
           _this.loadedGroupData = insertedOrGroupData;
           _this.loadedGroupId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
+          _this.loadedGroupChanged?.next(insertedOrGroupData as T[]);
         } else if (data == 'data_diff') {
           var value = _this.data || [];
           insertedOrGroupData?.forEach((e) => {
@@ -157,18 +159,22 @@ export class OutboundObject<T extends IdObject> {
     });
   }
 
-  public getForGroup(groupId: number): Promise<T[]> {
-    return new Promise(async (resolve) => {
+  public getForGroup(groupId: number): Observable<T[]> {
+    const observable = new Observable<T[]>((observer) => {
+      this.loadedGroupChanged = observer;
+    });
+    new Promise<void>(async (resolve) => {
       if (!this.requested && this.lazyLoaded) {
         await this.load();
       }
       if (this.loadedGroupId == groupId) {
-        resolve(this.loadedGroupData as T[]);
+        this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
       } else {
         await this.requestForGroup(groupId);
-        resolve(await this.getForGroup(groupId));
       }
-    });
+      resolve();
+    }).then();
+    return observable;
   }
 
   public get all(): T[] | null {
@@ -213,6 +219,7 @@ export class OutboundObject<T extends IdObject> {
 
   private loadedGroupId: number | null = null;
   private loadedGroupData: T[] | null = null;
+  private loadedGroupChanged: Observer<T[]> | null = null;
   private requestForGroup(groupId: number): Promise<T[]> {
     return this.client.send('request.' + this.method, { groupId });
   }
