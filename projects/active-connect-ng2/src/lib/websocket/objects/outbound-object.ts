@@ -5,6 +5,7 @@ export interface IdObject {
 }
 
 export class OutboundObject<T extends IdObject> {
+  private previouslyCachedCount: number | undefined;
   constructor(
     private client: WebsocketClient,
     private method: string,
@@ -13,6 +14,17 @@ export class OutboundObject<T extends IdObject> {
     private initialLoadingCount?: number
   ) {
     this.target.loading = new Map<string, boolean>();
+
+    if (this.client.dbService) {
+      this.client.dbService
+        .getByKey('outbound', method)
+        .subscribe((result: any) => {
+          if (result) {
+            this.previouslyCachedCount = result.length || undefined;
+          }
+        });
+    }
+
     const _this = this;
     WebsocketClient.expectOutbound(
       method,
@@ -38,6 +50,7 @@ export class OutboundObject<T extends IdObject> {
               .getByKey('outbound', method)
               .subscribe((result: any) => {
                 _this._loading = false;
+                if (result.length) _this._length = result.length;
                 _this.setData(result.data);
               });
           } else {
@@ -78,6 +91,7 @@ export class OutboundObject<T extends IdObject> {
                   method,
                   data,
                   specificHash,
+                  length,
                 })
                 .subscribe(() => {});
               console.log('updated outbound');
@@ -97,6 +111,7 @@ export class OutboundObject<T extends IdObject> {
                   method,
                   data,
                   specificHash,
+                  length,
                 })
                 .subscribe(() => {});
             } else {
@@ -121,7 +136,7 @@ export class OutboundObject<T extends IdObject> {
   public get(id: number): Promise<T> {
     return new Promise(async (resolve) => {
       if (!this.requested && this.lazyLoaded) {
-        await this.load();
+        await this.load(this.previouslyCachedCount);
       }
       if (this.data) {
         const result = this.dataMap.get(id);
