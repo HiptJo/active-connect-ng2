@@ -21,7 +21,7 @@ export class OutboundObject<T extends IdObject> {
         .getByKey('outbound', method)
         .subscribe((result: any) => {
           if (result) {
-            this.previouslyCachedCount = result.length || null;
+            this.previouslyCachedCount = result.data?.length || null;
           }
         });
     }
@@ -232,17 +232,21 @@ export class OutboundObject<T extends IdObject> {
   private requested: boolean = false;
   public async load(count?: number): Promise<void> {
     if (this.lazyLoaded) {
+      const hasBeenRequestedBefore = this.requested;
       this._loading = true;
       if (!this.requested) {
         this.loading = true;
       }
       this.requested = true;
       await this.client.send('request.' + this.method, {
-        count:
-          count || this.initialLoadingCount
-            ? (count || (this.initialLoadingCount as number)) +
-              this.loadedLength
-            : undefined,
+        count: hasBeenRequestedBefore
+          ? this.data
+            ? count || this.initialLoadingCount
+              ? (count || (this.initialLoadingCount as number)) +
+                this.loadedLength
+              : undefined
+            : undefined
+          : this.previouslyCachedCount || (this.initialLoadingCount as number),
         loaded: this.loadedLength,
       });
     } else {
