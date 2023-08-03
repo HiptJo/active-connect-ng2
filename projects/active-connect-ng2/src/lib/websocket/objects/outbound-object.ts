@@ -96,12 +96,21 @@ export class OutboundObject<T extends IdObject> {
         } else if (data == 'data_diff') {
           insertedOrGroupData?.forEach((e) => {
             _this.dataMap.set(e.id, e);
+            if (e.id == _this.loadedId) {
+              _this.loadedIdChanged?.next(e);
+            }
           });
           updatedOrGroupId?.forEach((e) => {
             _this.dataMap.set(e.id, e);
+            if (e.id == _this.loadedId) {
+              _this.loadedIdChanged?.next(e);
+            }
           });
           deleted?.forEach((e) => {
             _this.dataMap.delete(e.id);
+            if (e.id == _this.loadedId) {
+              _this.loadedIdChanged?.next(null as any);
+            }
           });
           _this.data = Array.from(_this.dataMap.values());
           _this.loading = false;
@@ -125,6 +134,13 @@ export class OutboundObject<T extends IdObject> {
           }
         } else {
           _this.setData(data);
+          if (_this.loadedId) {
+            const loadedValue = _this.dataMap.get(_this.loadedId);
+            if (loadedValue) {
+              _this.loadedIdData = loadedValue;
+              _this.loadedIdChanged?.next(_this.loadedIdData);
+            }
+          }
           _this.loading = false;
           if (cached && specificHash) {
             if (_client.dbService) {
