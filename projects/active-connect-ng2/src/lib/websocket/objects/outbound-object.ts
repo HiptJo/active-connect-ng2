@@ -82,6 +82,13 @@ export class OutboundObject<T extends IdObject> {
           _this.loadedGroupData = insertedOrGroupData;
           _this.loadedGroupId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
           _this.loadedGroupChanged?.next(insertedOrGroupData as T[]);
+        } else if (data == 'data_id') {
+          _this.loadedIdData =
+            (insertedOrGroupData?.length || 0) > 0
+              ? (insertedOrGroupData as any[])[0]
+              : null;
+          _this.loadedId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
+          _this.loadedIdChanged?.next(_this.loadedIdData as T);
         } else if (data == 'data_diff') {
           var value = _this.data || [];
           insertedOrGroupData?.forEach((e) => {
@@ -145,25 +152,31 @@ export class OutboundObject<T extends IdObject> {
   private dataMap: Map<number, T> = new Map();
   private data: T[] | undefined = undefined;
 
-  public get(id: number): Promise<T> {
-    return new Promise(async (resolve) => {
+  public get(id: number): Observable<T> {
+    const observable = new Observable<T>((observer) => {
+      this.loadedIdChanged = observer;
+    });
+
+    new Promise<void>(async (resolve) => {
       if (!this.requested && this.lazyLoaded) {
-        await this.load(this.previouslyCachedCount);
+        await this.load();
       }
       if (this.data) {
-        const result = this.dataMap.get(id);
-        if (result) {
-          resolve(result);
-        } else if (this.lazyLoaded) {
-          await this.requestById(id);
-          resolve(await this.get(id));
-        } else {
-          resolve(undefined as any);
+        const res = this.dataMap.get(id);
+        if (res) {
+          this.loadedIdChanged?.next(res);
+          resolve();
+          return;
+        }
+        if (this.loadedId == id) {
+          this.loadedIdChanged?.next(this.loadedIdData as T);
         }
       } else {
-        resolve(undefined as any);
+        await this.requestById(id);
       }
-    });
+      resolve();
+    }).then();
+    return observable;
   }
 
   public getForGroup(groupId: number): Observable<T[]> {
@@ -220,8 +233,11 @@ export class OutboundObject<T extends IdObject> {
     return this._length;
   }
 
-  private requestById(id: number): Promise<T> {
-    return this.client.send('request.' + this.method, { id }) as Promise<T>;
+  private loadedId: number | null = null;
+  private loadedIdData: T | null = null;
+  private loadedIdChanged: Observer<T> | null = null;
+  private requestById(id: number): Promise<any> {
+    return this.client.send('request.' + this.method, { id }) as Promise<any>;
   }
 
   private loadedGroupId: number | null = null;
