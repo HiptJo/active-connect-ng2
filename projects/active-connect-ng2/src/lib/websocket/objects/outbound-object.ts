@@ -50,7 +50,7 @@ export class OutboundObject<T extends IdObject> {
             _client.dbService
               .getByKey('outbound', method)
               .subscribe((result: any) => {
-                _this._loading = false;
+                _this.loading = false;
                 if (result.length) _this._length = result.length;
                 _this.setData(result.data);
               });
@@ -69,7 +69,7 @@ export class OutboundObject<T extends IdObject> {
               'Active - Connect: Caching / restore not possible as the indexedDB is not accessible'
             );
           }
-          _this._loading = false;
+          _this.loading = false;
           _this.requested = false;
         } else if (data == 'data_delete') {
           _this.data = undefined;
@@ -101,7 +101,7 @@ export class OutboundObject<T extends IdObject> {
             _this.dataMap.delete(e.id);
           });
           _this.data = Array.from(_this.dataMap.values());
-          _this._loading = false;
+          _this.loading = false;
 
           if (cached && specificHash) {
             if (_client.dbService) {
@@ -122,7 +122,7 @@ export class OutboundObject<T extends IdObject> {
           }
         } else {
           _this.setData(data);
-          _this._loading = false;
+          _this.loading = false;
           if (cached && specificHash) {
             if (_client.dbService) {
               _client.dbService
@@ -208,12 +208,12 @@ export class OutboundObject<T extends IdObject> {
   public async load(count?: number): Promise<void> {
     if (this.lazyLoaded) {
       this.requested = true;
-      this._loading = true;
+      this.loading = true;
       await this.client.send('request.' + this.method, {
         count: count || this.initialLoadingCount,
         loaded: this.loadedLength,
       });
-      this._loading = false;
+      this.loading = false;
     } else {
       throw Error(
         'Active-Connect: Cannot run loading request as this outbound is not lazy-loaded.'
@@ -222,6 +222,10 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private _loading = false;
+  private set loading(value: boolean) {
+    this._loading = value;
+    this.target.loading.set(this.method, value);
+  }
   public get loading(): boolean {
     return this._loading;
   }
