@@ -181,16 +181,12 @@ export class OutboundObject<T extends IdObject> {
         if (this.data) {
           const res = this.dataMap.get(id);
           if (res) {
-            setTimeout(() => {
-              this.loadedIdChanged?.next(res);
-            }, 10);
+            this.loadedIdChanged?.next(res);
             resolve();
             return;
           }
           if (this.loadedId == id) {
-            setTimeout(() => {
-              this.loadedIdChanged?.next(this.loadedIdData as T);
-            }, 10);
+            this.loadedIdChanged?.next(this.loadedIdData as T);
           }
         } else {
           await this.requestById(id);
@@ -209,9 +205,7 @@ export class OutboundObject<T extends IdObject> {
           await this.load();
         }
         if (this.loadedGroupId == groupId) {
-          setTimeout(() => {
-            this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
-          }, 10);
+          this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
         } else {
           await this.requestForGroup(groupId);
         }
