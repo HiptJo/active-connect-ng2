@@ -53,6 +53,11 @@ export function Outbound(
           target.___received[propertyKey] = false;
           target.___data[propertyKey] = undefined;
           target.loading.set(propertyKey, false);
+        } else if (data == 'data_delete') {
+          target.___data[propertyKey] = undefined;
+          target.loading.set(propertyKey, false);
+          target.___received[propertyKey] = false;
+          target.___requested[propertyKey] = false;
         } else if (data == 'data_diff') {
           var data = target.___data[propertyKey] || [];
           inserted?.forEach((e) => {

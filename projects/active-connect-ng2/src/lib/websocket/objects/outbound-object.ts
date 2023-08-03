@@ -71,6 +71,13 @@ export class OutboundObject<T extends IdObject> {
           }
           _this._loading = false;
           _this.requested = false;
+        } else if (data == 'data_delete') {
+          _this.data = undefined;
+          _this.dataMap = new Map();
+          _this.requested = false;
+          _this.loadedGroupData = null;
+          _this.loadedGroupId = null;
+          _this._length = undefined;
         } else if (data == 'data_group') {
           _this.loadedGroupData = insertedOrGroupData;
           _this.loadedGroupId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
@@ -136,7 +143,7 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private dataMap: Map<number, T> = new Map();
-  private data: T[] | null = null;
+  private data: T[] | undefined = undefined;
 
   public get(id: number): Promise<T> {
     return new Promise(async (resolve) => {
@@ -177,7 +184,7 @@ export class OutboundObject<T extends IdObject> {
     return observable;
   }
 
-  public get all(): T[] | null {
+  public get all(): T[] | undefined {
     if (!this.requested && this.lazyLoaded) {
       this.load().then();
     }
@@ -225,22 +232,15 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private setData(data: T[] | { added: T[] | undefined; length: number }) {
-    if ((data as any).added) {
-      if (!this.data) {
-        this.data = [];
-      }
-      this.data.push(...(data as any).added);
-      this._length = data.length;
-      this.data.forEach((d) => {
-        this.dataMap.set(d.id, d);
-      });
-    } else {
-      this.data = data as T[];
-      this._length = data.length;
-      this.dataMap = new Map();
-      this.data.forEach((d) => {
-        this.dataMap.set(d.id, d);
-      });
-    }
+    this.data = data as T[];
+    this._length = data.length;
+    this.dataMap = new Map();
+    this.data.forEach((d) => {
+      this.dataMap.set(d.id, d);
+    });
+  }
+
+  get isEmpty() {
+    return this.data == undefined;
   }
 }
