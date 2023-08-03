@@ -226,8 +226,11 @@ export class OutboundObject<T extends IdObject> {
   private requested: boolean = false;
   public async load(count?: number): Promise<void> {
     if (this.lazyLoaded) {
-      this.requested = true;
       this._loading = true;
+      if (!this.requested) {
+        this.loading = true;
+      }
+      this.requested = true;
       await this.client.send('request.' + this.method, {
         count:
           count || this.initialLoadingCount
@@ -263,7 +266,7 @@ export class OutboundObject<T extends IdObject> {
   private loadedIdData: T | null = null;
   private loadedIdChanged: Observer<T> | null = null;
   private requestById(id: number): Promise<any> {
-    this._loading = true;
+    this.loading = true;
     return this.client.send('request.' + this.method, { id }) as Promise<any>;
   }
 
@@ -271,7 +274,7 @@ export class OutboundObject<T extends IdObject> {
   private loadedGroupData: T[] | null = null;
   private loadedGroupChanged: Observer<T[]> | null = null;
   private requestForGroup(groupId: number): Promise<T[]> {
-    this._loading = true;
+    this.loading = true;
     return this.client.send('request.' + this.method, { groupId });
   }
 
