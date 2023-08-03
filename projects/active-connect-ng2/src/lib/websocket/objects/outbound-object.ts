@@ -174,51 +174,51 @@ export class OutboundObject<T extends IdObject> {
   public get(id: number): Observable<T> {
     const observable = new Observable<T>((observer) => {
       this.loadedIdChanged = observer;
+      new Promise<void>(async (resolve) => {
+        if (!this.requested && this.lazyLoaded) {
+          await this.load();
+        }
+        if (this.data) {
+          const res = this.dataMap.get(id);
+          if (res) {
+            setTimeout(() => {
+              this.loadedIdChanged?.next(res);
+            }, 10);
+            resolve();
+            return;
+          }
+          if (this.loadedId == id) {
+            setTimeout(() => {
+              this.loadedIdChanged?.next(this.loadedIdData as T);
+            }, 10);
+          }
+        } else {
+          await this.requestById(id);
+        }
+        resolve();
+      }).then();
     });
-
-    new Promise<void>(async (resolve) => {
-      if (!this.requested && this.lazyLoaded) {
-        await this.load();
-      }
-      if (this.data) {
-        const res = this.dataMap.get(id);
-        if (res) {
-          setTimeout(() => {
-            this.loadedIdChanged?.next(res);
-          }, 10);
-          resolve();
-          return;
-        }
-        if (this.loadedId == id) {
-          setTimeout(() => {
-            this.loadedIdChanged?.next(this.loadedIdData as T);
-          }, 10);
-        }
-      } else {
-        await this.requestById(id);
-      }
-      resolve();
-    }).then();
     return observable;
   }
 
   public getForGroup(groupId: number): Observable<T[]> {
     const observable = new Observable<T[]>((observer) => {
       this.loadedGroupChanged = observer;
+      new Promise<void>(async (resolve) => {
+        if (!this.requested && this.lazyLoaded) {
+          await this.load();
+        }
+        if (this.loadedGroupId == groupId) {
+          setTimeout(() => {
+            this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
+          }, 10);
+        } else {
+          await this.requestForGroup(groupId);
+        }
+        resolve();
+      }).then();
     });
-    new Promise<void>(async (resolve) => {
-      if (!this.requested && this.lazyLoaded) {
-        await this.load();
-      }
-      if (this.loadedGroupId == groupId) {
-        setTimeout(() => {
-          this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
-        }, 10);
-      } else {
-        await this.requestForGroup(groupId);
-      }
-      resolve();
-    }).then();
+
     return observable;
   }
 
