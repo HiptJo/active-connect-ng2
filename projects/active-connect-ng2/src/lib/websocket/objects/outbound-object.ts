@@ -1,5 +1,5 @@
-import { WebsocketClient } from 'active-connect-ng2';
 import { Observable, Observer } from 'rxjs';
+import { WebsocketClient } from '../client';
 
 export interface IdObject {
   id: number;
