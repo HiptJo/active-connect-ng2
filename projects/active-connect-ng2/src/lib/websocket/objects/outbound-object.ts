@@ -50,9 +50,9 @@ export class OutboundObject<T extends IdObject> {
             _client.dbService
               .getByKey('outbound', method)
               .subscribe((result: any) => {
-                _this.loading = false;
                 if (result.length) _this._length = result.length;
                 _this.setData(result.data);
+                _this.loading = false;
               });
           } else {
             console.error(
@@ -78,10 +78,12 @@ export class OutboundObject<T extends IdObject> {
           _this.loadedGroupData = null;
           _this.loadedGroupId = null;
           _this._length = undefined;
+          _this.loading = false;
         } else if (data == 'data_group') {
           _this.loadedGroupData = insertedOrGroupData;
           _this.loadedGroupId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
           _this.loadedGroupChanged?.next(insertedOrGroupData as T[]);
+          _this.loading = false;
         } else if (data == 'data_id') {
           _this.loadedIdData =
             (insertedOrGroupData?.length || 0) > 0
@@ -89,8 +91,8 @@ export class OutboundObject<T extends IdObject> {
               : null;
           _this.loadedId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
           _this.loadedIdChanged?.next(_this.loadedIdData as T);
+          _this.loading = false;
         } else if (data == 'data_diff') {
-          var value = _this.data || [];
           insertedOrGroupData?.forEach((e) => {
             _this.dataMap.set(e.id, e);
           });
@@ -208,7 +210,7 @@ export class OutboundObject<T extends IdObject> {
   public async load(count?: number): Promise<void> {
     if (this.lazyLoaded) {
       this.requested = true;
-      this.loading = true;
+      this._loading = true;
       await this.client.send('request.' + this.method, {
         count:
           count || this.initialLoadingCount
@@ -217,7 +219,6 @@ export class OutboundObject<T extends IdObject> {
             : undefined,
         loaded: this.loadedLength,
       });
-      this.loading = false;
     } else {
       throw Error(
         'Active-Connect: Cannot run loading request as this outbound is not lazy-loaded.'
@@ -245,6 +246,7 @@ export class OutboundObject<T extends IdObject> {
   private loadedIdData: T | null = null;
   private loadedIdChanged: Observer<T> | null = null;
   private requestById(id: number): Promise<any> {
+    this._loading = true;
     return this.client.send('request.' + this.method, { id }) as Promise<any>;
   }
 
@@ -252,6 +254,7 @@ export class OutboundObject<T extends IdObject> {
   private loadedGroupData: T[] | null = null;
   private loadedGroupChanged: Observer<T[]> | null = null;
   private requestForGroup(groupId: number): Promise<T[]> {
+    this._loading = true;
     return this.client.send('request.' + this.method, { groupId });
   }
 
