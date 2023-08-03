@@ -39,9 +39,6 @@ export class DecorableFunction {
    */
   private getBindObject(): any {
     const prototype = this.objConfig.target.prototype || this.objConfig.target;
-    console.log('bind obj:');
-    console.log(this.objConfig.target.prototype);
-    console.log(this.objConfig.target);
     return prototype.___data._obj;
   }
 }
