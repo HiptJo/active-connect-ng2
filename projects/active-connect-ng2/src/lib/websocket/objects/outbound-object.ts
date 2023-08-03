@@ -210,7 +210,11 @@ export class OutboundObject<T extends IdObject> {
       this.requested = true;
       this.loading = true;
       await this.client.send('request.' + this.method, {
-        count: count || this.initialLoadingCount,
+        count:
+          count || this.initialLoadingCount
+            ? (count || (this.initialLoadingCount as number)) +
+              this.loadedLength
+            : undefined,
         loaded: this.loadedLength,
       });
       this.loading = false;
