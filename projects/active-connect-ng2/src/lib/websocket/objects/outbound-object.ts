@@ -50,8 +50,9 @@ export class OutboundObject<T extends IdObject> {
             _client.dbService
               .getByKey('outbound', method)
               .subscribe((result: any) => {
-                if (result.length) _this._length = result.length;
+                console.log(result);
                 _this.setData(result.data);
+                if (result.length) _this._length = result.length;
                 _this.loading = false;
               });
           } else {
