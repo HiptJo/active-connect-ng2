@@ -131,8 +131,8 @@ export function Outbound(
 
     return {
       configurable: true,
-      writeable: true,
-      writable: true,
+      writeable: false,
+      writable: false,
       get() {
         if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
