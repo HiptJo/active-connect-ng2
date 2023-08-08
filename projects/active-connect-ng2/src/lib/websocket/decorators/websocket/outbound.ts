@@ -129,13 +129,13 @@ export function Outbound(
       });
     }
 
-    return {
+    const obj = {
       configurable: true,
       get() {
         console.log('in get, method=' + method);
         if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
-          this.send('request.' + method, null).then();
+          (this as any).send('request.' + method, null).then();
         }
         if (!target.___data) target.___data = {};
         if (!target.___data[propertyKey]) {
@@ -153,5 +153,7 @@ export function Outbound(
         return (target.___data[propertyKey] = val);
       },
     };
+    target[propertyKey] = obj;
+    return obj;
   };
 }
