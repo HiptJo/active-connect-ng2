@@ -91,7 +91,6 @@ export function Outbound(
                   specificHash,
                 })
                 .subscribe(() => {});
-              console.log('updated outbound');
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
@@ -111,7 +110,6 @@ export function Outbound(
                   specificHash,
                 })
                 .subscribe(() => {});
-              console.log('updated outbound');
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
@@ -132,7 +130,6 @@ export function Outbound(
     const obj = {
       configurable: true,
       get() {
-        console.log('in get, method=' + method);
         if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
           (this as any).send('request.' + method, null).then();
@@ -143,11 +140,9 @@ export function Outbound(
         } else if (target.loading[propertyKey]) {
           target.loading.set(propertyKey, false);
         }
-        console.log(target);
         return target.___data[propertyKey];
       },
       set(val: any) {
-        console.log('in set');
         if (!target.___data) target.___data = {};
         target.loading.set(propertyKey, false);
         return (target.___data[propertyKey] = val);

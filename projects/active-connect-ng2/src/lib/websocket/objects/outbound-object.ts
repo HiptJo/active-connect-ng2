@@ -50,7 +50,6 @@ export class OutboundObject<T extends IdObject> {
             _client.dbService
               .getByKey('outbound', method)
               .subscribe((result: any) => {
-                console.log(result);
                 _this.setData(result.data);
                 if (result.length) _this._length = result.length;
                 _this.loading = false;
@@ -125,7 +124,6 @@ export class OutboundObject<T extends IdObject> {
                   length,
                 })
                 .subscribe(() => {});
-              console.log('updated outbound');
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
