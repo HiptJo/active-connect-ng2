@@ -5,11 +5,7 @@ export function Outbound(
   requestingRequired?: boolean,
   cached?: boolean
 ) {
-  return function _Outbound(
-    target: any,
-    propertyKey: string,
-    descriptor: any
-  ): any {
+  return function _Outbound(target: any, propertyKey: string): any {
     target.loading = new Map<string, boolean>();
     // property annotation
     WebsocketClient.expectOutbound(
@@ -133,27 +129,28 @@ export function Outbound(
       });
     }
 
-    if (descriptor.initializer) descriptor.initializer();
-
-    delete descriptor.writable;
-    delete descriptor.initializer;
-    descriptor.get = function get() {
-      if (requestingRequired && !target.___requested[propertyKey]) {
-        target.___requested[propertyKey] = true;
-        this.send('request.' + method, null).then();
-      }
-      if (!target.___data) target.___data = {};
-      if (!target.___data[propertyKey]) {
-        target.loading.set(propertyKey, true);
-      } else if (target.loading[propertyKey]) {
+    return {
+      configurable: true,
+      writeable: true,
+      writable: true,
+      get() {
+        if (requestingRequired && !target.___requested[propertyKey]) {
+          target.___requested[propertyKey] = true;
+          this.send('request.' + method, null).then();
+        }
+        if (!target.___data) target.___data = {};
+        if (!target.___data[propertyKey]) {
+          target.loading.set(propertyKey, true);
+        } else if (target.loading[propertyKey]) {
+          target.loading.set(propertyKey, false);
+        }
+        return target.___data[propertyKey];
+      },
+      set(val: any) {
+        if (!target.___data) target.___data = {};
         target.loading.set(propertyKey, false);
-      }
-      return target.___data[propertyKey];
-    };
-    descriptor.set = function set(val: any) {
-      if (!target.___data) target.___data = {};
-      target.loading.set(propertyKey, false);
-      return (target.___data[propertyKey] = val);
+        return (target.___data[propertyKey] = val);
+      },
     };
   };
 }
