@@ -131,9 +131,8 @@ export function Outbound(
 
     return {
       configurable: true,
-      writeable: false,
-      writable: false,
       get() {
+        console.log('in get, method=' + method);
         if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
           this.send('request.' + method, null).then();
@@ -144,9 +143,11 @@ export function Outbound(
         } else if (target.loading[propertyKey]) {
           target.loading.set(propertyKey, false);
         }
+        console.log(target);
         return target.___data[propertyKey];
       },
       set(val: any) {
+        console.log('in set');
         if (!target.___data) target.___data = {};
         target.loading.set(propertyKey, false);
         return (target.___data[propertyKey] = val);
