@@ -2,7 +2,7 @@ import { Observable, Observer } from 'rxjs';
 import { WebsocketClient } from '../client';
 
 export interface IdObject {
-  id: number;
+  id: number | null | undefined;
 }
 
 export class OutboundObject<T extends IdObject> {
@@ -12,7 +12,8 @@ export class OutboundObject<T extends IdObject> {
     private method: string,
     private lazyLoaded?: boolean,
     public readonly cached?: boolean,
-    private initialLoadingCount?: number
+    private initialLoadingCount?: number,
+    private sortBy?: (a: T, b: T) => number
   ) {
     this.target.loading = new Map<string, boolean>();
 
@@ -112,6 +113,8 @@ export class OutboundObject<T extends IdObject> {
             }
           });
           _this.data = Array.from(_this.dataMap.values());
+          if (_this.data && _this.sortBy)
+            _this.data = _this.data.sort(_this.sortBy);
           _this.loading = false;
 
           if (cached && specificHash) {
@@ -166,7 +169,7 @@ export class OutboundObject<T extends IdObject> {
     return (this.client as any).__proto__;
   }
 
-  private dataMap: Map<number, T> = new Map();
+  private dataMap: Map<number | null | undefined, T> = new Map();
   private data: T[] | undefined = undefined;
 
   public get(id: number): Observable<T> {
@@ -282,6 +285,7 @@ export class OutboundObject<T extends IdObject> {
 
   private setData(data: T[] | { added: T[] | undefined; length: number }) {
     this.data = data as T[];
+    if (this.data && this.sortBy) this.data = this.data.sort(this.sortBy);
     this._length = data.length;
     this.dataMap = new Map();
     this.data.forEach((d) => {

@@ -3,7 +3,8 @@ import { WebsocketClient } from '../../client';
 export function Outbound(
   method: string,
   requestingRequired?: boolean,
-  cached?: boolean
+  cached?: boolean,
+  sortBy?: (a: any, b: any) => number
 ) {
   return function _Outbound(target: any, propertyKey: string): any {
     target.loading = new Map<string, boolean>();
@@ -79,6 +80,7 @@ export function Outbound(
           deleted?.forEach((e) => {
             data = data.filter((d: any) => d.id != e.id);
           });
+          if (sortBy && data) data = data.sort(sortBy);
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
 
@@ -98,6 +100,7 @@ export function Outbound(
             }
           }
         } else {
+          if (sortBy && data) data = data.sort(sortBy);
           target.___received[propertyKey] = true;
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
@@ -145,6 +148,7 @@ export function Outbound(
       set(val: any) {
         if (!target.___data) target.___data = {};
         target.loading.set(propertyKey, false);
+        if (sortBy && val) val = val.sort(sortBy);
         return (target.___data[propertyKey] = val);
       },
     };
