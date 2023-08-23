@@ -186,9 +186,9 @@ export class OutboundObject<T extends IdObject> {
             resolve();
             return;
           }
-          if (this.loadedId == id) {
-            this.loadedIdChanged?.next(this.loadedIdData as T);
-          }
+        }
+        if (this.loadedId == id) {
+          this.loadedIdChanged?.next(this.loadedIdData as T);
         } else {
           await this.requestById(id);
         }
