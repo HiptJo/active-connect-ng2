@@ -122,7 +122,7 @@ export class OutboundObject<T extends IdObject> {
               _client.dbService
                 .update('outbound', {
                   method,
-                  data,
+                  data: _this.data,
                   specificHash,
                   length,
                 })
