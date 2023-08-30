@@ -182,7 +182,7 @@ export class OutboundObject<T extends IdObject> {
       this.loadedIdChanged = observer;
       new Promise<void>(async (resolve) => {
         if (!this.requested && this.lazyLoaded) {
-          await this.load();
+          this.load().then();
         }
         if (this.data) {
           const res = this.dataMap.get(id);
@@ -213,7 +213,7 @@ export class OutboundObject<T extends IdObject> {
       this.loadedGroupChanged = observer;
       new Promise<void>(async (resolve) => {
         if (!this.requested && this.lazyLoaded) {
-          await this.load();
+          this.load().then();
         }
         if (this.loadedGroupId == groupId) {
           this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
