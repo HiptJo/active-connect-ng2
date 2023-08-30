@@ -173,7 +173,10 @@ export class OutboundObject<T extends IdObject> {
   private data: T[] | undefined = undefined;
 
   public get(id: number): Observable<T> {
-    if (this.requestedId == id && this.loadedObservable) {
+    if (this.requestedId == id && this.loadedObservable && this.loadedIdData) {
+      setTimeout(() => {
+        if (this.loadedIdData) this.loadedIdChanged?.next(this.loadedIdData);
+      }, 50);
       return this.loadedObservable;
     }
 
@@ -204,7 +207,15 @@ export class OutboundObject<T extends IdObject> {
   }
 
   public getForGroup(groupId: number): Observable<T[]> {
-    if (this.requestedGroupId == groupId && this.loadedGroupObservable) {
+    if (
+      this.requestedGroupId == groupId &&
+      this.loadedGroupData &&
+      this.loadedGroupObservable
+    ) {
+      setTimeout(() => {
+        if (this.loadedGroupData)
+          this.loadedGroupChanged?.next(this.loadedGroupData);
+      }, 50);
       return this.loadedGroupObservable;
     }
 
