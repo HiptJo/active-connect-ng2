@@ -173,7 +173,12 @@ export class OutboundObject<T extends IdObject> {
   private data: T[] | undefined = undefined;
 
   public get(id: number): Observable<T> {
-    const observable = new Observable<T>((observer) => {
+    if (this.requestedId == id && this.loadedObservable) {
+      return this.loadedObservable;
+    }
+
+    this.requestedGroupId = id;
+    this.loadedObservable = new Observable<T>((observer) => {
       this.loadedIdChanged = observer;
       new Promise<void>(async (resolve) => {
         if (!this.requested && this.lazyLoaded) {
@@ -195,11 +200,16 @@ export class OutboundObject<T extends IdObject> {
         resolve();
       }).then();
     });
-    return observable;
+    return this.loadedObservable;
   }
 
   public getForGroup(groupId: number): Observable<T[]> {
-    const observable = new Observable<T[]>((observer) => {
+    if (this.requestedGroupId == groupId && this.loadedGroupObservable) {
+      return this.loadedGroupObservable;
+    }
+
+    this.requestedGroupId = groupId;
+    this.loadedGroupObservable = new Observable<T[]>((observer) => {
       this.loadedGroupChanged = observer;
       new Promise<void>(async (resolve) => {
         if (!this.requested && this.lazyLoaded) {
@@ -214,7 +224,7 @@ export class OutboundObject<T extends IdObject> {
       }).then();
     });
 
-    return observable;
+    return this.loadedGroupObservable;
   }
 
   public get all(): T[] | undefined {
@@ -267,6 +277,8 @@ export class OutboundObject<T extends IdObject> {
     return this._length;
   }
 
+  private requestedId: number | null = null;
+  private loadedObservable: Observable<T> | null = null;
   private loadedId: number | null = null;
   private loadedIdData: T | null = null;
   private loadedIdChanged: Observer<T> | null = null;
@@ -275,6 +287,8 @@ export class OutboundObject<T extends IdObject> {
     return this.client.send('request.' + this.method, { id }) as Promise<any>;
   }
 
+  private requestedGroupId: number | null = null;
+  private loadedGroupObservable: Observable<T[]> | null = null;
   private loadedGroupId: number | null = null;
   private loadedGroupData: T[] | null = null;
   private loadedGroupChanged: Observer<T[]> | null = null;
