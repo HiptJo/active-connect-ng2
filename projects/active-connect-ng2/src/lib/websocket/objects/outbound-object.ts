@@ -81,18 +81,27 @@ export class OutboundObject<T extends IdObject> {
           _this._length = undefined;
           _this.loading = false;
         } else if (data == 'data_group') {
-          _this.loadedGroupData = insertedOrGroupData;
-          _this.loadedGroupId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
-          _this.loadedGroupChanged?.next(insertedOrGroupData as T[]);
-          _this.loading = false;
+          if (
+            _this.requestedGroupId ==
+            (updatedOrGroupId ? updatedOrGroupId[0] : 0)
+          ) {
+            _this.loadedGroupData = insertedOrGroupData;
+            _this.loadedGroupId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
+            _this.loadedGroupChanged?.next(insertedOrGroupData as T[]);
+            _this.loading = false;
+          }
         } else if (data == 'data_id') {
-          _this.loadedIdData =
-            (insertedOrGroupData?.length || 0) > 0
-              ? (insertedOrGroupData as any[])[0]
-              : null;
-          _this.loadedId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
-          _this.loadedIdChanged?.next(_this.loadedIdData as T);
-          _this.loading = false;
+          if (
+            _this.requestedId == (updatedOrGroupId ? updatedOrGroupId[0] : 0)
+          ) {
+            _this.loadedIdData =
+              (insertedOrGroupData?.length || 0) > 0
+                ? (insertedOrGroupData as any[])[0]
+                : null;
+            _this.loadedId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
+            _this.loadedIdChanged?.next(_this.loadedIdData as T);
+            _this.loading = false;
+          }
         } else if (data == 'data_diff') {
           insertedOrGroupData?.forEach((e) => {
             _this.dataMap.set(e.id, e);
@@ -181,7 +190,6 @@ export class OutboundObject<T extends IdObject> {
       return this.loadedObservable;
     }
 
-    this.requestedGroupId = id;
     this.loadedObservable = new Observable<T>((observer) => {
       this.loadedIdChanged = observer;
       new Promise<void>(async (resolve) => {
@@ -217,7 +225,6 @@ export class OutboundObject<T extends IdObject> {
       return this.loadedGroupObservable;
     }
 
-    this.requestedGroupId = groupId;
     this.loadedGroupObservable = new Observable<T[]>((observer) => {
       this.loadedGroupChanged = observer;
       new Promise<void>(async (resolve) => {
@@ -293,6 +300,7 @@ export class OutboundObject<T extends IdObject> {
   private loadedIdChanged: Observer<T> | null = null;
   private requestById(id: number): Promise<any> {
     this.loading = true;
+    this.requestedId = id;
     return this.client.send('request.' + this.method, { id }) as Promise<any>;
   }
 
@@ -303,6 +311,7 @@ export class OutboundObject<T extends IdObject> {
   private loadedGroupChanged: Observer<T[]> | null = null;
   private requestForGroup(groupId: number): Promise<T[]> {
     this.loading = true;
+    this.requestedGroupId = groupId;
     return this.client.send('request.' + this.method, { groupId });
   }
 
