@@ -133,6 +133,7 @@ export function Outbound(
     const obj = {
       configurable: true,
       get() {
+        if (!target.___requested) target.___requested = {};
         if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
           (this as any).send('request.' + method, null).then();
