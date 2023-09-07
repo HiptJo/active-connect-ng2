@@ -202,11 +202,10 @@ export class WebsocketClient {
           const out = WebsocketClient.outbounds.get(method);
           if (out) {
             out(value, specificHash, inserted, updated, deleted, length, this);
-          } else {
-            const handle = WebsocketClient.handles.get(method);
-            if (handle) {
-              (handle.Func as Function)(value);
-            }
+          }
+          const handle = WebsocketClient.handles.get(method);
+          if (handle) {
+            (handle.Func as Function)(value);
           }
         }
       }
