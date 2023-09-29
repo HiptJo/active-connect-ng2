@@ -86,13 +86,19 @@ export function Outbound(
 
           if (cached && specificHash) {
             if (_this.dbService) {
-              _this.dbService
-                .update('outbound', {
-                  method,
-                  data,
-                  specificHash,
-                })
-                .subscribe(() => {});
+              if (data && data?.length > 0) {
+                _this.dbService
+                  .update('outbound', {
+                    method,
+                    data,
+                    specificHash,
+                  })
+                  .subscribe(() => {});
+              } else {
+                _this.dbService
+                  .deleteByKey('outbound', method)
+                  .subscribe(() => {});
+              }
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
@@ -106,13 +112,19 @@ export function Outbound(
           target.loading.set(propertyKey, false);
           if (cached && specificHash) {
             if (_this.dbService) {
-              _this.dbService
-                .update('outbound', {
-                  method,
-                  data,
-                  specificHash,
-                })
-                .subscribe(() => {});
+              if (data && data?.length > 0) {
+                _this.dbService
+                  .update('outbound', {
+                    method,
+                    data,
+                    specificHash,
+                  })
+                  .subscribe(() => {});
+              } else {
+                _this.dbService
+                  .deleteByKey('outbound', method)
+                  .subscribe(() => {});
+              }
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'

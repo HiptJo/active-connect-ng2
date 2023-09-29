@@ -128,14 +128,20 @@ export class OutboundObject<T extends IdObject> {
 
           if (cached && specificHash) {
             if (_client.dbService) {
-              _client.dbService
-                .update('outbound', {
-                  method,
-                  data: _this.data,
-                  specificHash,
-                  length,
-                })
-                .subscribe(() => {});
+              if (_this.data && _this.data?.length > 0) {
+                _client.dbService
+                  .update('outbound', {
+                    method,
+                    data: _this.data,
+                    specificHash,
+                    length,
+                  })
+                  .subscribe(() => {});
+              } else {
+                _client.dbService
+                  .deleteByKey('outbound', method)
+                  .subscribe(() => {});
+              }
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
@@ -154,14 +160,20 @@ export class OutboundObject<T extends IdObject> {
           _this.loading = false;
           if (cached && specificHash) {
             if (_client.dbService) {
-              _client.dbService
-                .update('outbound', {
-                  method,
-                  data,
-                  specificHash,
-                  length,
-                })
-                .subscribe(() => {});
+              if (data && data?.length > 0) {
+                _client.dbService
+                  .update('outbound', {
+                    method,
+                    data,
+                    specificHash,
+                    length,
+                  })
+                  .subscribe(() => {});
+              } else {
+                _client.dbService
+                  .deleteByKey('outbound', method)
+                  .subscribe(() => {});
+              }
             } else {
               console.error(
                 'Active-Connect: Caching not possible as the indexedDB has not been initialized'
