@@ -239,11 +239,10 @@ export class OutboundObject<T extends IdObject> {
       this.loadedGroupObservable &&
       this.loadedGroupData
     ) {
-      if (this.loadedGroupData)
-        setTimeout(() => {
-          if (this.loadedGroupData)
-            this.loadedGroupChanged?.next(this.loadedGroupData);
-        }, 50);
+      setTimeout(() => {
+        if (this.loadedGroupData)
+          this.loadedGroupChanged?.next(this.loadedGroupData);
+      }, 50);
       return this.loadedGroupObservable;
     }
 
@@ -256,7 +255,7 @@ export class OutboundObject<T extends IdObject> {
       if (!this.requested && this.lazyLoaded) {
         this.load().then();
       }
-      if (this.loadedGroupId == groupId) {
+      if (this.loadedGroupId == groupId && this.loadedGroupData) {
         this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
       } else {
         await this.requestForGroup(groupId);
@@ -369,9 +368,9 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private afterServerReconnected() {
-    if (this.requested) {
+    if (this.requested && this.lazyLoaded) {
       this.requested = false;
-      this.load().then();
+      this.load(1).then();
     }
     if (this.loadedId) {
       this.loadedIdData = null;
