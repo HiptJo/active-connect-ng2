@@ -60,8 +60,8 @@ export class WebsocketClient {
     if (value) {
       this.sendBrowserInfoToServer();
 
-      this.resetRequestedState();
       this.auth(this.Token).then(() => {
+        this.resetRequestedState();
         this.requestStack.forEach((e) => {
           this.sendToSocket(e.method, e.data);
           this.requestStack = this.requestStack.filter((e1) => e1 != e);
