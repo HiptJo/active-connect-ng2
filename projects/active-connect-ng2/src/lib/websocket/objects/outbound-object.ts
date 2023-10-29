@@ -184,6 +184,10 @@ export class OutboundObject<T extends IdObject> {
         if (length) _this._length = length;
       }
     );
+
+    WebsocketClient.addResetRequestingStateCallback(() => {
+      this.afterServerReconnected();
+    });
   }
 
   get target(): any {
@@ -194,7 +198,7 @@ export class OutboundObject<T extends IdObject> {
   private data: T[] | undefined = undefined;
 
   public get(id: number): Observable<T> {
-    if (this.requestedId == id && this.loadedObservable) {
+    if (this.requestedId == id && this.loadedObservable && this.loadedIdData) {
       if (this.loadedIdData)
         setTimeout(() => {
           if (this.loadedIdData) this.loadedIdChanged?.next(this.loadedIdData);
@@ -202,33 +206,39 @@ export class OutboundObject<T extends IdObject> {
       return this.loadedObservable;
     }
 
-    this.loadedObservable = new Observable<T>((observer) => {
-      this.loadedIdChanged = observer;
-      new Promise<void>(async (resolve) => {
-        if (!this.requested && this.lazyLoaded) {
-          this.load().then();
+    if (this.requestedId != id || !this.loadedObservable) {
+      this.loadedObservable = new Observable<T>((observer) => {
+        this.loadedIdChanged = observer;
+      });
+    }
+    new Promise<void>(async (resolve) => {
+      if (!this.requested && this.lazyLoaded) {
+        this.load().then();
+      }
+      if (this.data) {
+        const res = this.dataMap.get(id);
+        if (res) {
+          this.loadedIdChanged?.next(res);
+          resolve();
+          return;
         }
-        if (this.data) {
-          const res = this.dataMap.get(id);
-          if (res) {
-            this.loadedIdChanged?.next(res);
-            resolve();
-            return;
-          }
-        }
-        if (this.loadedId == id) {
-          this.loadedIdChanged?.next(this.loadedIdData as T);
-        } else {
-          await this.requestById(id);
-        }
-        resolve();
-      }).then();
-    });
+      }
+      if (this.loadedId == id) {
+        this.loadedIdChanged?.next(this.loadedIdData as T);
+      } else {
+        await this.requestById(id);
+      }
+      resolve();
+    }).then();
     return this.loadedObservable;
   }
 
   public getForGroup(groupId: number): Observable<T[]> {
-    if (this.requestedGroupId == groupId && this.loadedGroupObservable) {
+    if (
+      this.requestedGroupId == groupId &&
+      this.loadedGroupObservable &&
+      this.loadedGroupData
+    ) {
       if (this.loadedGroupData)
         setTimeout(() => {
           if (this.loadedGroupData)
@@ -237,20 +247,22 @@ export class OutboundObject<T extends IdObject> {
       return this.loadedGroupObservable;
     }
 
-    this.loadedGroupObservable = new Observable<T[]>((observer) => {
-      this.loadedGroupChanged = observer;
-      new Promise<void>(async (resolve) => {
-        if (!this.requested && this.lazyLoaded) {
-          this.load().then();
-        }
-        if (this.loadedGroupId == groupId) {
-          this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
-        } else {
-          await this.requestForGroup(groupId);
-        }
-        resolve();
-      }).then();
-    });
+    if (this.requestedGroupId != groupId || !this.loadedGroupObservable) {
+      this.loadedGroupObservable = new Observable<T[]>((observer) => {
+        this.loadedGroupChanged = observer;
+      });
+    }
+    new Promise<void>(async (resolve) => {
+      if (!this.requested && this.lazyLoaded) {
+        this.load().then();
+      }
+      if (this.loadedGroupId == groupId) {
+        this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
+      } else {
+        await this.requestForGroup(groupId);
+      }
+      resolve();
+    }).then();
 
     return this.loadedGroupObservable;
   }
@@ -353,6 +365,21 @@ export class OutboundObject<T extends IdObject> {
       if (!updateLengthVariable) {
         this._length = length;
       }
+    }
+  }
+
+  private afterServerReconnected() {
+    if (this.requested) {
+      this.requested = false;
+      this.load().then();
+    }
+    if (this.loadedId) {
+      this.loadedIdData = null;
+      this.get(this.loadedId);
+    }
+    if (this.loadedGroupId) {
+      this.loadedGroupData = null;
+      this.getForGroup(this.loadedGroupId);
     }
   }
 }
