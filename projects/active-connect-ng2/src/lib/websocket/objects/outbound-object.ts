@@ -206,31 +206,38 @@ export class OutboundObject<T extends IdObject> {
       return this.loadedObservable;
     }
 
+    let observablePromise: Promise<any> | undefined;
     if (this.requestedId != id || !this.loadedObservable) {
-      this.loadedObservable = new Observable<T>((observer) => {
-        this.loadedIdChanged = observer;
+      observablePromise = new Promise<void>((resolve) => {
+        this.loadedObservable = new Observable<T>((observer: Observer<T>) => {
+          this.loadedIdChanged = observer;
+          resolve();
+        });
       });
     }
-    new Promise<void>(async (resolve) => {
-      if (!this.requested && this.lazyLoaded) {
-        this.load().then();
-      }
-      if (this.data) {
-        const res = this.dataMap.get(id);
-        if (res) {
-          this.loadedIdChanged?.next(res);
-          resolve();
-          return;
+
+    Promise.all([observablePromise]).then(() => {
+      new Promise<void>(async (resolve) => {
+        if (!this.requested && this.lazyLoaded) {
+          this.load().then();
         }
-      }
-      if (this.loadedId == id) {
-        this.loadedIdChanged?.next(this.loadedIdData as T);
-      } else {
-        await this.requestById(id);
-      }
-      resolve();
-    }).then();
-    return this.loadedObservable;
+        if (this.data) {
+          const res = this.dataMap.get(id);
+          if (res) {
+            this.loadedIdChanged?.next(res);
+            resolve();
+            return;
+          }
+        }
+        if (this.loadedId == id) {
+          this.loadedIdChanged?.next(this.loadedIdData as T);
+        } else {
+          await this.requestById(id);
+        }
+        resolve();
+      }).then();
+    });
+    return this.loadedObservable as Observable<T>;
   }
 
   public getForGroup(groupId: number): Observable<T[]> {
@@ -246,24 +253,33 @@ export class OutboundObject<T extends IdObject> {
       return this.loadedGroupObservable;
     }
 
+    let observablePromise: Promise<any> | undefined;
     if (this.requestedGroupId != groupId || !this.loadedGroupObservable) {
-      this.loadedGroupObservable = new Observable<T[]>((observer) => {
-        this.loadedGroupChanged = observer;
+      observablePromise = new Promise<void>((resolve) => {
+        this.loadedGroupObservable = new Observable<T[]>(
+          (observer: Observer<T[]>) => {
+            this.loadedGroupChanged = observer;
+            resolve();
+          }
+        );
       });
     }
-    new Promise<void>(async (resolve) => {
-      if (!this.requested && this.lazyLoaded) {
-        this.load().then();
-      }
-      if (this.loadedGroupId == groupId && this.loadedGroupData) {
-        this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
-      } else {
-        await this.requestForGroup(groupId);
-      }
-      resolve();
-    }).then();
+  
 
-    return this.loadedGroupObservable;
+    Promise.all([observablePromise]).then(() => {
+      new Promise<void>(async (resolve) => {
+        if (!this.requested && this.lazyLoaded) {
+          this.load().then();
+        }
+        if (this.loadedGroupId == groupId && this.loadedGroupData) {
+          this.loadedGroupChanged?.next(this.loadedGroupData as T[]);
+        } else {
+          await this.requestForGroup(groupId);
+        }
+        resolve();
+      }).then();
+    });
+    return this.loadedGroupObservable as Observable<T[]>;
   }
 
   public get all(): T[] | undefined {
