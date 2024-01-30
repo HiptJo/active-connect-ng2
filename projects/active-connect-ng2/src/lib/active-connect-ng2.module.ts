@@ -3,7 +3,7 @@ import { NgxIndexedDBModule, DBConfig } from 'ngx-indexed-db';
 
 const dbConfig: DBConfig = {
   name: 'activeconnect_cache',
-  version: 1,
+  version: 2,
   objectStoresMeta: [
     {
       store: 'outbound',
