@@ -25,30 +25,51 @@ export function Outbound(
         if (!target.___received) target.___received = {};
         if (!target.___requested) target.___requested = {};
         if (!cached) {
-          if (_this.dbService)
-            _this.dbService.deleteByKey('outbound', method).subscribe(() => {});
+          if (_this.dbService) {
+            try {
+              _this.dbService
+                .deleteByKey('outbound', method)
+                .subscribe(() => {});
+            } catch (e) {
+              console.error(
+                'ActiveConnect: could not delete indexdb cache entry'
+              );
+            }
+          }
         }
 
         if (data == 'cache_restore') {
           if (_this.dbService) {
-            _this.dbService
-              .getByKey('outbound', method)
-              .subscribe((result: any) => {
-                target.___received[propertyKey] = true;
-                target.___data[propertyKey] = result.data;
-                target.loading.set(propertyKey, false);
-              });
+            try {
+              _this.dbService
+                .getByKey('outbound', method)
+                .subscribe((result: any) => {
+                  target.___received[propertyKey] = true;
+                  target.___data[propertyKey] = result.data;
+                  target.loading.set(propertyKey, false);
+                });
+            } catch (e) {
+              console.error('ActiveConnect: Unable to restore cached data.');
+              console.error(e);
+            }
           } else {
             console.error(
-              'Active - Connect: Caching / restore not possible as the indexedDB is not accessible'
+              'ActiveConnect: Caching / restore not possible as the indexedDB is not accessible'
             );
           }
         } else if (data == 'cache_delete') {
           if (_this.dbService) {
-            _this.dbService.deleteByKey('outbound', method).subscribe(() => {});
+            try {
+              _this.dbService
+                .deleteByKey('outbound', method)
+                .subscribe(() => {});
+            } catch (e) {
+              console.error('ActiveConnect: Unable to delete cached data');
+              console.error(e);
+            }
           } else {
             console.error(
-              'Active - Connect: Caching / restore not possible as the indexedDB is not accessible'
+              'ActiveConnect: Caching / restore not possible as the indexedDB is not accessible'
             );
           }
           target.___received[propertyKey] = false;
@@ -87,21 +108,31 @@ export function Outbound(
           if (cached && specificHash) {
             if (_this.dbService) {
               if (data && data?.length > 0) {
-                _this.dbService
-                  .update('outbound', {
-                    method,
-                    data,
-                    specificHash,
-                  })
-                  .subscribe(() => {});
+                try {
+                  _this.dbService
+                    .update('outbound', {
+                      method,
+                      data,
+                      specificHash,
+                    })
+                    .subscribe(() => {});
+                } catch (e) {
+                  console.error('ActiveConnect: Unable to update cached data');
+                  console.error(e);
+                }
               } else {
-                _this.dbService
-                  .deleteByKey('outbound', method)
-                  .subscribe(() => {});
+                try {
+                  _this.dbService
+                    .deleteByKey('outbound', method)
+                    .subscribe(() => {});
+                } catch (e) {
+                  console.error('ActiveConnect: Unable to delete cached data');
+                  console.error(e);
+                }
               }
             } else {
               console.error(
-                'Active-Connect: Caching not possible as the indexedDB has not been initialized'
+                'ActiveConnect: Caching not possible as the indexedDB has not been initialized'
               );
             }
           }
@@ -113,21 +144,31 @@ export function Outbound(
           if (cached && specificHash) {
             if (_this.dbService) {
               if (data && data?.length > 0) {
-                _this.dbService
-                  .update('outbound', {
-                    method,
-                    data,
-                    specificHash,
-                  })
-                  .subscribe(() => {});
+                try {
+                  _this.dbService
+                    .update('outbound', {
+                      method,
+                      data,
+                      specificHash,
+                    })
+                    .subscribe(() => {});
+                } catch (e) {
+                  console.error('ActiveConnect: Unable to update cached data');
+                  console.error(e);
+                }
               } else {
-                _this.dbService
-                  .deleteByKey('outbound', method)
-                  .subscribe(() => {});
+                try {
+                  _this.dbService
+                    .deleteByKey('outbound', method)
+                    .subscribe(() => {});
+                } catch (e) {
+                  console.error('ActiveConnect: Unable to update cached data');
+                  console.error(e);
+                }
               }
             } else {
               console.error(
-                'Active-Connect: Caching not possible as the indexedDB has not been initialized'
+                'ActiveConnect: Caching not possible as the indexedDB has not been initialized'
               );
             }
           }

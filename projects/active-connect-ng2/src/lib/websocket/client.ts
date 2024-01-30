@@ -91,7 +91,7 @@ export class WebsocketClient {
     this.ws = new WebSocket(url + (this.supportsCache ? '?cache=true' : ''));
     this.ws.onerror = (err) => {
       this.ws.close();
-      console.log(err);
+      console.log('ActiveConnect: ' + err);
     };
     this.ws.onopen = () => {
       this.Connected = true;
@@ -218,19 +218,27 @@ export class WebsocketClient {
 
   private handleOutboundCacheRequest(method: string) {
     if (this.dbService) {
-      this.dbService.getByKey('outbound', method).subscribe((item: any) => {
-        if (item) {
-          this.send('___cache', {
-            method,
-            specificHash: item.specificHash || null,
-          });
-        } else {
-          this.send('___cache', {
-            method,
-            specificHash: null,
-          });
-        }
-      });
+      try {
+        this.dbService.getByKey('outbound', method).subscribe((item: any) => {
+          if (item) {
+            this.send('___cache', {
+              method,
+              specificHash: item.specificHash || null,
+            });
+          } else {
+            this.send('___cache', {
+              method,
+              specificHash: null,
+            });
+          }
+        });
+      } catch (e) {
+        this.send('___cache', {
+          method,
+          specificHash: null,
+        });
+        console.error('ActiveConnect: ' + e);
+      }
     } else {
       this.send('___cache', {
         method,
