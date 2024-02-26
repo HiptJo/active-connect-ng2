@@ -18,8 +18,9 @@ export function Route(
       if (this.client) {
         res = await this.client
           .send(method, data[0], dontEnsureTransmission)
-          ?.catch(() => {
+          ?.catch((err: any) => {
             if (loadingKey) this.loadingElements[loadingKey]--;
+            throw err;
           });
       }
       await promise;

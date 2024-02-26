@@ -195,8 +195,11 @@ export class WebsocketClient {
         if (reject) {
           reject(value);
         }
+        messageId = -1;
       }
+    }
 
+    if (messageId != null) {
       const callback = this.expectedMethods.get(messageId);
       if (callback) {
         const func = callback.shift();
