@@ -190,11 +190,10 @@ export class WebsocketClient {
       this.handleOutboundCacheRequest(value);
     }
     if (messageId) {
-      if (method) {
+      if (method == 'm.error') {
         const reject = this.rejectCallbacks.get(messageId);
         if (reject) {
           reject(value);
-          return;
         }
       }
 
