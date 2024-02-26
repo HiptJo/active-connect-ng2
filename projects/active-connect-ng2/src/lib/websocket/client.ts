@@ -149,11 +149,13 @@ export class WebsocketClient {
     }
   }
 
+  private rejectCallbacks: Map<number, Function> = new Map();
   private expectedMethods: Map<string | number, Array<Function>> = new Map();
   private expectMethod(method: string, messageId?: number | null) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (messageId) {
         this.expectedMethods.set(messageId, [resolve]);
+        this.rejectCallbacks.set(messageId, reject);
       } else {
         if (this.expectedMethods.has(method)) {
           let arr = this.expectedMethods.get(method);
@@ -188,6 +190,14 @@ export class WebsocketClient {
       this.handleOutboundCacheRequest(value);
     }
     if (messageId) {
+      if (method) {
+        const reject = this.rejectCallbacks.get(messageId);
+        if (reject) {
+          reject(value);
+          return;
+        }
+      }
+
       const callback = this.expectedMethods.get(messageId);
       if (callback) {
         const func = callback.shift();

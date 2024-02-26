@@ -16,7 +16,11 @@ export function Route(
       const promise = original.bind(this)(...data);
       let res = null;
       if (this.client) {
-        res = await this.client.send(method, data[0], dontEnsureTransmission);
+        res = await this.client
+          .send(method, data[0], dontEnsureTransmission)
+          ?.catch(() => {
+            if (loadingKey) this.loadingElements[loadingKey]--;
+          });
       }
       await promise;
       if (loadingKey) this.loadingElements[loadingKey]--;
