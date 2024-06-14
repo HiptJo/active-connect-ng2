@@ -61,10 +61,18 @@ export class WebsocketClient {
       this.sendBrowserInfoToServer();
 
       this.auth(this.Token).then(() => {
-        this.resetRequestedState();
-        this.requestStack.forEach((e) => {
-          this.sendToSocket(e.method, e.data);
-          this.requestStack = this.requestStack.filter((e1) => e1 != e);
+        Promise.all(
+          WebsocketClient.onReconnectCallback.map((c) =>
+            c.Func ? c.Func() : null
+          )
+        ).then(() => {
+          setTimeout(() => {
+            this.resetRequestedState();
+            this.requestStack.forEach((e) => {
+              this.sendToSocket(e.method, e.data);
+              this.requestStack = this.requestStack.filter((e1) => e1 != e);
+            });
+          }, 2000);
         });
       });
     }
@@ -365,6 +373,11 @@ export class WebsocketClient {
   }[] = [];
   public static onSuccess(callback: DecorableFunction, regexp: RegExp) {
     this.onSuccessHandlers.push({ callback, regexp });
+  }
+
+  private static onReconnectCallback: DecorableFunction[] = [];
+  static onReconnect(callback: DecorableFunction) {
+    WebsocketClient.onReconnectCallback.push(callback);
   }
 
   private invokeSuccessHandlers(method: string) {
