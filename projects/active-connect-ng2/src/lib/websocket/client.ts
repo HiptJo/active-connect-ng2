@@ -30,6 +30,7 @@ export class WebsocketClient {
       this.url = protocol + '//' + document.location.hostname + port + '/wss';
     }
     this.connect(this.url as string);
+    this.initTabSuspendedListener();
   }
 
   subject: any;
@@ -39,6 +40,22 @@ export class WebsocketClient {
       this.create(url);
     }
     return this.subject;
+  }
+
+  private initTabSuspendedListener() {
+    if (document) {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          console.log(
+            'ActiveConnect: Closing WebSocket due to tab suspension...'
+          );
+          this.disconnect(true);
+        } else if (document.visibilityState === 'visible') {
+          console.log('ActiveConnect: Reconnecting WebSocket...');
+          this.connect(this.url as string);
+        }
+      });
+    }
   }
 
   private requestStack: any[] = [];
