@@ -42,6 +42,13 @@ export class WebsocketClient {
   }
 
   private requestStack: any[] = [];
+  private requestHistoryLogs: { timestamp: Date; method: string }[] = [];
+  private logEntry(method: string) {
+    this.requestHistoryLogs.push({ timestamp: new Date(Date.now()), method });
+  }
+  public get logs(): { timestamp: Date; method: string }[] {
+    return this.requestHistoryLogs;
+  }
 
   private _token = '';
   public get Token(): string {
@@ -96,18 +103,22 @@ export class WebsocketClient {
 
   private create(url: string) {
     // create new connection
+    this.logEntry('TCP/HTTP:CONNECT-SERVER');
     this.ws = new WebSocket(url + (this.supportsCache ? '?cache=true' : ''));
     this.ws.onerror = (err) => {
       this.ws.close();
+      this.logEntry('TCP/HTTP:ERROR:' + err);
       console.log('ActiveConnect: ' + err);
     };
     this.ws.onopen = () => {
+      this.logEntry('TCP/HTTP:CONNECTED');
       this.Connected = true;
     };
     this.ws.onmessage = (e) => {
       this.messageReceived(JsonParser.parse(e.data.toString()));
     };
     this.ws.onclose = () => {
+      this.logEntry('TCP/HTTP:CLOSED');
       if (!this.closed) {
         if (this.pool && this.pool.WssConnected) this.pool.WssConnected = false;
         setTimeout(() => {
@@ -143,6 +154,7 @@ export class WebsocketClient {
     data: any,
     dontEnsureTransmission?: boolean
   ): Promise<any> {
+    this.logEntry('SEND:' + method);
     const messageId = this.sendToSocket(
       method,
       data,
@@ -194,6 +206,7 @@ export class WebsocketClient {
     deleted: any[] | null;
     length: number | null;
   }) {
+    this.logEntry('RECEIVED:' + method);
     if (method == '___cache') {
       this.handleOutboundCacheRequest(value);
     }
