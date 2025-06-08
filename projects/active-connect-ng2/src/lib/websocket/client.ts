@@ -30,7 +30,6 @@ export class WebsocketClient {
       this.url = protocol + '//' + document.location.hostname + port + '/wss';
     }
     this.connect(this.url as string);
-    this.initTabSuspendedListener();
   }
 
   subject: any;
@@ -42,7 +41,7 @@ export class WebsocketClient {
     return this.subject;
   }
 
-  private initTabSuspendedListener() {
+  public initTabSuspendedListener() {
     if (document) {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
