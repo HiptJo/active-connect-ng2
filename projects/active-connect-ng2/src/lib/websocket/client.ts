@@ -137,6 +137,8 @@ export class WebsocketClient {
       this.logEntry('TCP/HTTP:CLOSED');
       if (!this.closed) {
         if (this.pool && this.pool.WssConnected) this.pool.WssConnected = false;
+        this.logEntry('TCP/HTTP:RESET-REQUESTED-OUTBOUND-STATE');
+        this.resetRequestedState();
         setTimeout(() => {
           this.connect(url);
         }, 1000);
