@@ -431,7 +431,7 @@ export class WebsocketClient {
   public closed = false;
   public disconnect(restart?: boolean) {
     if (!restart) this.closed = true;
-    this.ws.close();
+    if (this.ws) this.ws.close();
   }
 
   private initCache() {}
