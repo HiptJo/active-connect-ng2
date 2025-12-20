@@ -1,6 +1,6 @@
 {
   "name": "active-connect-ng2",
-  "version": "0.2.40",
+  "version": "0.2.41",
   "peerDependencies": {
     "@angular/common": "^15.1.0",
     "@angular/core": "^15.1.0",
