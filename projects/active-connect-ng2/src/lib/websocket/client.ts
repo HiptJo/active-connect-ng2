@@ -12,6 +12,10 @@ export class WebsocketClient {
     public dbService?: NgxIndexedDBService
   ) {
     if (supportsCache) this.initCache();
+    this.setUrl(this.url);
+  }
+
+  protected setUrl(url: string | undefined) {
     if (!url) {
       let protocol;
       let port;
@@ -27,8 +31,10 @@ export class WebsocketClient {
           break;
         }
       }
-      this.url = protocol + '//' + document.location.hostname + port + '/wss';
+      url = protocol + '//' + document.location.hostname + port + '/wss';
     }
+    this.url = url;
+    this.disconnect();
     this.connect(this.url as string);
   }
 
