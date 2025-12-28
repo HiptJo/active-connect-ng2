@@ -108,6 +108,7 @@ export class OutboundObject<T extends IdObject> {
           ) {
             _this.loadedGroupData = insertedOrGroupData;
             _this.loadedGroupId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
+            _this.requestedGroupIdConnectionId = _this.target.___connectionId;
             _this.loadedGroupChanged?.next(insertedOrGroupData as T[]);
             _this.loading = false;
           }
@@ -120,6 +121,7 @@ export class OutboundObject<T extends IdObject> {
                 ? (insertedOrGroupData as any[])[0]
                 : null;
             _this.loadedId = updatedOrGroupId ? updatedOrGroupId[0] : 0;
+            _this.requestedIdConnectionId = _this.target.___connectionId;
             _this.loadedIdChanged?.next(_this.loadedIdData as T);
             _this.loading = false;
           }
@@ -229,7 +231,12 @@ export class OutboundObject<T extends IdObject> {
   private data: T[] | undefined = undefined;
 
   public get(id: number): Observable<T> {
-    if (this.requestedId == id && this.loadedObservable && this.loadedIdData) {
+    if (
+      this.requestedId == id &&
+      this.target.___connectionId == this.requestedIdConnectionId &&
+      this.loadedObservable &&
+      this.loadedIdData
+    ) {
       if (this.loadedIdData)
         setTimeout(() => {
           if (this.loadedIdData) this.loadedIdChanged?.next(this.loadedIdData);
@@ -238,7 +245,11 @@ export class OutboundObject<T extends IdObject> {
     }
 
     let observablePromise: Promise<any> | undefined;
-    if (this.requestedId != id || !this.loadedObservable) {
+    if (
+      this.requestedId != id ||
+      this.target.___connectionId != this.requestedIdConnectionId ||
+      !this.loadedObservable
+    ) {
       observablePromise = new Promise<void>((resolve) => {
         this.loadedObservable = new Observable<T>((observer: Observer<T>) => {
           this.loadedIdChanged = observer;
@@ -274,6 +285,7 @@ export class OutboundObject<T extends IdObject> {
   public getForGroup(groupId: number): Observable<T[]> {
     if (
       this.requestedGroupId == groupId &&
+      this.target.___connectionId == this.requestedGroupIdConnectionId &&
       this.loadedGroupObservable &&
       this.loadedGroupData
     ) {
@@ -285,7 +297,11 @@ export class OutboundObject<T extends IdObject> {
     }
 
     let observablePromise: Promise<any> | undefined;
-    if (this.requestedGroupId != groupId || !this.loadedGroupObservable) {
+    if (
+      this.requestedGroupId != groupId ||
+      this.target.___connectionId != this.requestedGroupIdConnectionId ||
+      !this.loadedGroupObservable
+    ) {
       observablePromise = new Promise<void>((resolve) => {
         this.loadedGroupObservable = new Observable<T[]>(
           (observer: Observer<T[]>) => {
@@ -363,6 +379,7 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private requestedId: number | null = null;
+  private requestedIdConnectionId: number | null = null;
   private loadedObservable: Observable<T> | null = null;
   private loadedId: number | null = null;
   private loadedIdData: T | null = null;
@@ -374,6 +391,7 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private requestedGroupId: number | null = null;
+  private requestedGroupIdConnectionId: number | null = null;
   private loadedGroupObservable: Observable<T[]> | null = null;
   private loadedGroupId: number | null = null;
   private loadedGroupData: T[] | null = null;

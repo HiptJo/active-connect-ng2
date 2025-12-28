@@ -41,6 +41,11 @@ export class WebsocketClient {
   subject: any;
 
   private connect(url: string) {
+    if (!this.target.___connectionId) {
+      this.target.___connectionId = 0;
+    }
+    this.target.___connectionId++;
+
     if (!this.subject) {
       this.create(url);
     }
@@ -435,4 +440,8 @@ export class WebsocketClient {
   }
 
   private initCache() {}
+
+  get target(): any {
+    return (this as any).__proto__;
+  }
 }
