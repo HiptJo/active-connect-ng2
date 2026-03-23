@@ -34,7 +34,7 @@ export class WebsocketClient {
       url = protocol + '//' + document.location.hostname + port + '/wss';
     }
     this.url = url;
-    this.disconnect(true);
+    this.disconnect(false);
     this.connect(this.url as string);
   }
 
@@ -140,6 +140,7 @@ export class WebsocketClient {
     this.ws.onopen = () => {
       this.logEntry('TCP/HTTP:CONNECTED');
       this.Connected = true;
+      this.closed = false;
     };
     this.ws.onmessage = (e) => {
       this.messageReceived(JsonParser.parse(e.data.toString()));
