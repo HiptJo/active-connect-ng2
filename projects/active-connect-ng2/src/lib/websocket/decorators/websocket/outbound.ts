@@ -113,7 +113,7 @@ export function Outbound(
                     .update('outbound', {
                       method,
                       data,
-                      specificHash,
+                      specificHash
                     })
                     .subscribe(() => {});
                 } catch (e) {
@@ -149,7 +149,7 @@ export function Outbound(
                     .update('outbound', {
                       method,
                       data,
-                      specificHash,
+                      specificHash
                     })
                     .subscribe(() => {});
                 } catch (e) {
@@ -176,9 +176,11 @@ export function Outbound(
       }
     );
     if (requestingRequired) {
-      WebsocketClient.addResetRequestingStateCallback(function callback() {
-        if (target.___requested) {
-          target.___requested[propertyKey] = false;
+      WebsocketClient.addResetRequestingStateCallback(function callback(
+        client: WebsocketClient
+      ) {
+        if (target.___requested && target.___requested[propertyKey]) {
+          client.send('request.' + method, null).then();
         }
       });
     }
@@ -204,7 +206,7 @@ export function Outbound(
         target.loading.set(propertyKey, false);
         if (sortBy && val) val = val.sort(sortBy);
         return (target.___data[propertyKey] = val);
-      },
+      }
     };
     target[propertyKey] = obj;
     return obj;

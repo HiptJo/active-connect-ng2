@@ -9,7 +9,7 @@ export class WebsocketClient {
   constructor(
     private url?: string,
     private supportsCache?: boolean,
-    public dbService?: NgxIndexedDBService,
+    public dbService?: NgxIndexedDBService
   ) {
     if (supportsCache) this.initCache();
     this.setUrl(this.url);
@@ -57,7 +57,7 @@ export class WebsocketClient {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           console.log(
-            'ActiveConnect: Closing WebSocket due to tab suspension...',
+            'ActiveConnect: Closing WebSocket due to tab suspension...'
           );
           this.disconnect(true);
         } else if (document.visibilityState === 'visible') {
@@ -97,8 +97,8 @@ export class WebsocketClient {
       this.auth(this.Token).then(() => {
         Promise.all(
           WebsocketClient.onReconnectCallback.map((c) =>
-            c.Func ? c.Func() : null,
-          ),
+            c.Func ? c.Func() : null
+          )
         ).then(() => {
           setTimeout(() => {
             this.resetRequestedState();
@@ -118,7 +118,7 @@ export class WebsocketClient {
     if (this.connectionEstablishedOnce) {
       // reset requested state for outbounds
       WebsocketClient.resetRequestedStateCallbacks.forEach((reset) => {
-        reset();
+        reset(this);
       });
     } else {
       this.connectionEstablishedOnce = true;
@@ -162,7 +162,7 @@ export class WebsocketClient {
   protected sendToSocket(
     method: string,
     data: any,
-    dontEnsureTransmission?: boolean,
+    dontEnsureTransmission?: boolean
   ) {
     const messageId = ++this.messageId;
     if (this.ws.readyState != this.ws.OPEN) {
@@ -182,13 +182,13 @@ export class WebsocketClient {
   public send(
     method: string,
     data: any,
-    dontEnsureTransmission?: boolean,
+    dontEnsureTransmission?: boolean
   ): Promise<any> {
     this.logEntry('SEND:' + method);
     const messageId = this.sendToSocket(
       method,
       data,
-      dontEnsureTransmission || false,
+      dontEnsureTransmission || false
     );
     if (messageId) {
       return this.expectMethod(`m.${method}`, messageId);
@@ -225,7 +225,7 @@ export class WebsocketClient {
     inserted,
     updated,
     deleted,
-    length,
+    length
   }: {
     method: string;
     value: any;
@@ -274,7 +274,7 @@ export class WebsocketClient {
       }
     } else {
       throw Error(
-        'No MessageId was provided, the connection is not supported.',
+        'No MessageId was provided, the connection is not supported.'
       );
     }
   }
@@ -286,29 +286,29 @@ export class WebsocketClient {
           if (item) {
             this.send('___cache', {
               method,
-              specificHash: item.specificHash || null,
+              specificHash: item.specificHash || null
             });
           } else {
             this.send('___cache', {
               method,
-              specificHash: null,
+              specificHash: null
             });
           }
         });
       } catch (e) {
         this.send('___cache', {
           method,
-          specificHash: null,
+          specificHash: null
         });
         console.error('ActiveConnect: ' + e);
       }
     } else {
       this.send('___cache', {
         method,
-        specificHash: null,
+        specificHash: null
       });
       console.error(
-        'Active-Connect: Caching not possible as the indexedDB has not been initialized',
+        'Active-Connect: Caching not possible as the indexedDB has not been initialized'
       );
     }
   }
@@ -322,7 +322,7 @@ export class WebsocketClient {
       updated: any[] | null,
       deleted: any[] | null,
       length: number | null,
-      _this: WebsocketClient,
+      _this: WebsocketClient
     ) => void
   > = new Map();
   static expectOutbound(
@@ -334,8 +334,8 @@ export class WebsocketClient {
       updated: any[] | null,
       deleted: any[] | null,
       length: number | null,
-      _this: WebsocketClient,
-    ) => void,
+      _this: WebsocketClient
+    ) => void
   ) {
     WebsocketClient.outbounds.set(method, callback);
   }
@@ -355,7 +355,7 @@ export class WebsocketClient {
     const browser = this.getBrowser();
     const os = this.getOS();
     this.send('___browser', {
-      browser: `${browser.name} ${browser.version} ${os}`,
+      browser: `${browser.name} ${browser.version} ${os}`
     });
   }
 
@@ -365,7 +365,7 @@ export class WebsocketClient {
       tem,
       M =
         ua.match(
-          /(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i,
+          /(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i
         ) || [];
     if (/trident/i.test(M[1])) {
       tem = /\brv[ :]+(\d+)/g.exec(ua) || [];
@@ -383,7 +383,7 @@ export class WebsocketClient {
     }
     return {
       name: M[0],
-      version: M[1],
+      version: M[1]
     };
   }
 
