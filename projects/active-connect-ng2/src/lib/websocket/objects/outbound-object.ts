@@ -158,7 +158,7 @@ export class OutboundObject<T extends IdObject> {
                       method,
                       data: _this.data,
                       specificHash,
-                      length,
+                      length
                     })
                     .subscribe(() => {});
                 } else {
@@ -195,7 +195,7 @@ export class OutboundObject<T extends IdObject> {
                       method,
                       data,
                       specificHash,
-                      length,
+                      length
                     })
                     .subscribe(() => {});
                 } else {
@@ -353,7 +353,7 @@ export class OutboundObject<T extends IdObject> {
               : undefined
             : undefined
           : this.previouslyCachedCount || (this.initialLoadingCount as number),
-        loaded: this.loadedLength,
+        loaded: this.loadedLength
       });
     } else {
       throw Error(
@@ -434,7 +434,7 @@ export class OutboundObject<T extends IdObject> {
   private afterServerReconnected() {
     if (this.requested && this.lazyLoaded) {
       this.requested = false;
-      this.load(1).then();
+      this.load(this.loadedLength).then();
     }
     if (this.loadedId) {
       this.loadedIdData = null;
