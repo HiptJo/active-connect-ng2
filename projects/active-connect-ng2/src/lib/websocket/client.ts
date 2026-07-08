@@ -103,7 +103,7 @@ export class WebsocketClient {
           setTimeout(() => {
             this.resetRequestedState();
             this.requestStack.forEach((e) => {
-              this.sendToSocket(e.method, e.data);
+              this.sendToSocket(e.method, e.data, false, e.messageId);
               this.requestStack = this.requestStack.filter((e1) => e1 != e);
             });
           }, 2000);
@@ -162,9 +162,10 @@ export class WebsocketClient {
   protected sendToSocket(
     method: string,
     data: any,
-    dontEnsureTransmission?: boolean
+    dontEnsureTransmission?: boolean,
+    forcedMessageId?: number
   ) {
-    const messageId = ++this.messageId;
+    const messageId = forcedMessageId ?? ++this.messageId;
     if (this.ws.readyState != this.ws.OPEN) {
       if (!dontEnsureTransmission)
         this.requestStack.push({ method, data, messageId });
