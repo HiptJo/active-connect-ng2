@@ -34,11 +34,10 @@ export class WebsocketClient {
       url = protocol + '//' + document.location.hostname + port + '/wss';
     }
     this.url = url;
-    this.disconnect(false);
+    // Initial setup: nothing to tear down yet, just open the first connection.
+    this.closed = false;
     this.connect(this.url as string);
   }
-
-  subject: any;
 
   private connect(url: string) {
     if (!this.target.___connectionId) {
@@ -46,10 +45,15 @@ export class WebsocketClient {
     }
     this.target.___connectionId++;
 
-    if (!this.subject) {
-      this.create(url);
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.CONNECTING ||
+        this.ws.readyState === WebSocket.OPEN)
+    ) {
+      return;
     }
-    return this.subject;
+
+    this.create(url);
   }
 
   public initTabSuspendedListener() {
@@ -62,6 +66,7 @@ export class WebsocketClient {
           this.disconnect(true);
         } else if (document.visibilityState === 'visible') {
           console.log('ActiveConnect: Reconnecting WebSocket...');
+          this.closed = false;
           this.connect(this.url as string);
         }
       });
@@ -129,6 +134,25 @@ export class WebsocketClient {
   }
 
   private create(url: string) {
+    if (this.ws) {
+      // Detach handlers first so the old socket's close event can't trigger
+      // another reconnect cycle once it's no longer the "current" socket.
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+      if (
+        this.ws.readyState === WebSocket.CONNECTING ||
+        this.ws.readyState === WebSocket.OPEN
+      ) {
+        this.ws.close();
+      }
+    }
+
+    this.clearReconnectTimer();
+
+    this.closed = false;
+
     // create new connection
     this.logEntry('TCP/HTTP:CONNECT-SERVER');
     this.ws = new WebSocket(url + (this.supportsCache ? '?cache=true' : ''));
@@ -140,7 +164,6 @@ export class WebsocketClient {
     this.ws.onopen = () => {
       this.logEntry('TCP/HTTP:CONNECTED');
       this.Connected = true;
-      this.closed = false;
     };
     this.ws.onmessage = (e) => {
       this.messageReceived(JsonParser.parse(e.data.toString()));
@@ -151,11 +174,21 @@ export class WebsocketClient {
         if (this.pool && this.pool.WssConnected) this.pool.WssConnected = false;
         this.logEntry('TCP/HTTP:RESET-REQUESTED-OUTBOUND-STATE');
         this.resetRequestedState();
-        setTimeout(() => {
+        this.clearReconnectTimer();
+        this.reconnectTimer = setTimeout(() => {
+          this.reconnectTimer = undefined;
           this.connect(url);
         }, 1000);
       }
     };
+  }
+
+  private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+  private clearReconnectTimer() {
+    if (this.reconnectTimer !== undefined) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
   }
 
   private messageId: number = 0;
@@ -437,8 +470,18 @@ export class WebsocketClient {
 
   public closed = false;
   public disconnect(restart?: boolean) {
-    if (!restart) this.closed = true;
+    this.closed = true;
+
+    this.clearReconnectTimer();
+
     if (this.ws) this.ws.close();
+
+    if (!restart) {
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+    }
   }
 
   private initCache() {}
