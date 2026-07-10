@@ -99,21 +99,25 @@ export class WebsocketClient {
     if (value) {
       this.sendBrowserInfoToServer();
 
-      this.auth(this.Token).then(() => {
-        Promise.all(
-          WebsocketClient.onReconnectCallback.map((c) =>
-            c.Func ? c.Func() : null
-          )
-        ).then(() => {
-          setTimeout(() => {
-            this.resetRequestedState();
-            this.requestStack.forEach((e) => {
-              this.sendToSocket(e.method, e.data, false, e.messageId);
-              this.requestStack = this.requestStack.filter((e1) => e1 != e);
-            });
-          }, 2000);
+      this.auth(this.Token)
+        .catch((err) => {
+          console.log('ActiveConnect: auth failed on reconnect: ' + err);
+        })
+        .then(() => {
+          Promise.all(
+            WebsocketClient.onReconnectCallback.map((c) =>
+              c.Func ? c.Func() : null
+            )
+          ).then(() => {
+            setTimeout(() => {
+              this.resetRequestedState();
+              this.requestStack.forEach((e) => {
+                this.sendToSocket(e.method, e.data, false, e.messageId);
+                this.requestStack = this.requestStack.filter((e1) => e1 != e);
+              });
+            }, 2000);
+          });
         });
-      });
     }
     if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
   }
@@ -133,6 +137,15 @@ export class WebsocketClient {
     WebsocketClient.resetRequestedStateCallbacks.push(callback);
   }
 
+  private static readonly HANDSHAKE_TIMEOUT_MS = 10000;
+  private handshakeTimer: ReturnType<typeof setTimeout> | undefined;
+  private clearHandshakeTimer() {
+    if (this.handshakeTimer !== undefined) {
+      clearTimeout(this.handshakeTimer);
+      this.handshakeTimer = undefined;
+    }
+  }
+
   private create(url: string) {
     if (this.ws) {
       // Detach handlers first so the old socket's close event can't trigger
@@ -150,25 +163,65 @@ export class WebsocketClient {
     }
 
     this.clearReconnectTimer();
+    this.clearHandshakeTimer();
 
     this.closed = false;
 
     // create new connection
     this.logEntry('TCP/HTTP:CONNECT-SERVER');
     this.ws = new WebSocket(url + (this.supportsCache ? '?cache=true' : ''));
+
+    this.handshakeTimer = setTimeout(() => {
+      if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+        this.logEntry('TCP/HTTP:HANDSHAKE-TIMEOUT');
+        console.log(
+          'ActiveConnect: Handshake timed out, retrying connection...'
+        );
+        // Detach so the forced close below doesn't double-trigger reconnect logic.
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        try {
+          this.ws.close();
+        } catch (err) {
+          // ignore - socket may already be in a bad state
+        }
+        if (!this.closed) {
+          this.clearReconnectTimer();
+          this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = undefined;
+            this.connect(url);
+          }, 1000);
+        }
+      }
+    }, WebsocketClient.HANDSHAKE_TIMEOUT_MS);
+
     this.ws.onerror = (err) => {
       this.ws.close();
       this.logEntry('TCP/HTTP:ERROR:' + err);
       console.log('ActiveConnect: ' + err);
     };
     this.ws.onopen = () => {
+      this.clearHandshakeTimer();
       this.logEntry('TCP/HTTP:CONNECTED');
       this.Connected = true;
     };
     this.ws.onmessage = (e) => {
-      this.messageReceived(JsonParser.parse(e.data.toString()));
+      let parsed;
+      try {
+        parsed = JsonParser.parse(e.data.toString());
+      } catch (err) {
+        // A malformed frame must not throw inside the onmessage handler -
+        // that would silently kill message processing for the rest of the
+        // connection's lifetime without ever surfacing an error.
+        console.log('ActiveConnect: failed to parse incoming message: ' + err);
+        return;
+      }
+      this.messageReceived(parsed);
     };
     this.ws.onclose = () => {
+      this.clearHandshakeTimer();
       this.logEntry('TCP/HTTP:CLOSED');
       if (!this.closed) {
         if (this.pool && this.pool.WssConnected) this.pool.WssConnected = false;
@@ -473,6 +526,7 @@ export class WebsocketClient {
     this.closed = true;
 
     this.clearReconnectTimer();
+    this.clearHandshakeTimer();
 
     if (this.ws) this.ws.close();
 
