@@ -438,11 +438,11 @@ export class OutboundObject<T extends IdObject> {
     }
     if (this.loadedId) {
       this.loadedIdData = null;
-      this.get(this.loadedId);
+      this.requestById(this.loadedId).catch(() => {});
     }
     if (this.loadedGroupId) {
       this.loadedGroupData = null;
-      this.getForGroup(this.loadedGroupId);
+      this.requestForGroup(this.loadedGroupId).catch(() => {});
     }
   }
 }
