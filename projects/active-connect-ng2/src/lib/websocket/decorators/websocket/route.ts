@@ -19,12 +19,14 @@ export function Route(
         res = await this.client
           .send(method, data[0], dontEnsureTransmission)
           ?.catch((err: any) => {
-            if (loadingKey) this.loadingElements[loadingKey]--;
+            if (loadingKey && this.loadingElements[loadingKey])
+              this.loadingElements[loadingKey]--;
             throw err;
           });
       }
       await promise;
-      if (loadingKey) this.loadingElements[loadingKey]--;
+      if (loadingKey && this.loadingElements[loadingKey])
+        this.loadingElements[loadingKey]--;
       return res;
     };
     return target;
