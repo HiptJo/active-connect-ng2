@@ -1,10 +1,11 @@
 {
   "name": "active-connect-ng2",
-  "version": "0.2.50",
+  "version": "0.3.0",
   "peerDependencies": {
-    "@angular/common": "^15.1.0",
-    "@angular/core": "^15.1.0",
-    "ngx-indexed-db": "^16.0.0"
+    "@angular/common": "^20.0.0 || ^21.0.0 || ^22.0.0",
+    "@angular/core": "^20.0.0 || ^21.0.0 || ^22.0.0",
+    "ngx-indexed-db": "^21.0.0 || ^22.0.0",
+    "rxjs": "^7.8.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"

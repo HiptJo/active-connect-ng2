@@ -1,3 +1,23 @@
+import {
+  createLoadingElements,
+  isReactiveLoadingElements
+} from '../../reactivity';
+
+/**
+ * Upgrades a service's plain `loadingElements` object to a signal-backed one the
+ * first time it is needed, so existing services keep working unchanged while
+ * their templates become reactive under OnPush / zoneless change detection.
+ */
+function ensureReactiveLoadingElements(service: any) {
+  if (!isReactiveLoadingElements(service.loadingElements)) {
+    try {
+      service.loadingElements = createLoadingElements(service.loadingElements);
+    } catch {
+      // read-only property: keep the consumer's object (still works, just not reactive)
+    }
+  }
+}
+
 export function Route(
   method: string,
   loadingKey?: string,
@@ -8,6 +28,7 @@ export function Route(
     const original = target[propertyKey];
     target[propertyKey] = async function execRoute(...data: any): Promise<any> {
       if (loadingKey) {
+        ensureReactiveLoadingElements(this);
         if (!this.loadingElements[loadingKey]) {
           this.loadingElements[loadingKey] = 0;
         }

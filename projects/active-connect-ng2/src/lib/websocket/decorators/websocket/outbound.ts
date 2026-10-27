@@ -1,4 +1,11 @@
 import { WebsocketClient } from '../../client';
+import {
+  bumpTick,
+  defer,
+  ensureLoadingMap,
+  ReactiveLoadingMap,
+  readTick
+} from '../../reactivity';
 
 export function Outbound(
   method: string,
@@ -7,7 +14,7 @@ export function Outbound(
   sortBy?: (a: any, b: any) => number
 ) {
   return function _Outbound(target: any, propertyKey: string): any {
-    target.loading = new Map<string, boolean>();
+    ensureLoadingMap(target);
     // property annotation
     WebsocketClient.expectOutbound(
       method,
@@ -47,6 +54,7 @@ export function Outbound(
                   target.___received[propertyKey] = true;
                   target.___data[propertyKey] = result.data;
                   target.loading.set(propertyKey, false);
+                  bumpTick(target, propertyKey);
                 });
             } catch (e) {
               console.error('ActiveConnect: Unable to restore cached data.');
@@ -75,13 +83,16 @@ export function Outbound(
           target.___received[propertyKey] = false;
           target.___data[propertyKey] = undefined;
           target.loading.set(propertyKey, false);
+          bumpTick(target, propertyKey);
         } else if (data == 'data_delete') {
           target.___data[propertyKey] = undefined;
           target.loading.set(propertyKey, false);
           target.___received[propertyKey] = false;
           target.___requested[propertyKey] = false;
+          bumpTick(target, propertyKey);
         } else if (data == 'data_diff') {
-          var data = target.___data[propertyKey] || [];
+          // copy: a new array reference is required so OnPush inputs / signals notice the change
+          var data: any = [...(target.___data[propertyKey] || [])];
           inserted?.forEach((e) => {
             const matching = data.filter((d: any) => d.id == e.id);
             if (matching.length > 0) {
@@ -104,6 +115,7 @@ export function Outbound(
           if (sortBy && data) data = data.sort(sortBy);
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
+          bumpTick(target, propertyKey);
 
           if (cached && specificHash) {
             if (_this.dbService) {
@@ -141,6 +153,7 @@ export function Outbound(
           target.___received[propertyKey] = true;
           target.___data[propertyKey] = data;
           target.loading.set(propertyKey, false);
+          bumpTick(target, propertyKey);
           if (cached && specificHash) {
             if (_this.dbService) {
               if (data && data?.length > 0) {
@@ -188,16 +201,21 @@ export function Outbound(
     const obj = {
       configurable: true,
       get() {
+        // Registers a signal dependency, so templates re-render on new data.
+        readTick(target, propertyKey);
         if (!target.___requested) target.___requested = {};
         if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
-          (this as any).send('request.' + method, null).then();
+          // never write signals / send while a template is rendering
+          defer(() => (this as any).send('request.' + method, null).then());
         }
         if (!target.___data) target.___data = {};
+        const loadingMap = target.loading as ReactiveLoadingMap;
         if (!target.___data[propertyKey]) {
-          target.loading.set(propertyKey, true);
-        } else if (target.loading[propertyKey]) {
-          target.loading.set(propertyKey, false);
+          if (loadingMap.peek(propertyKey) !== true)
+            defer(() => loadingMap.set(propertyKey, true));
+        } else if (loadingMap.peek(propertyKey)) {
+          defer(() => loadingMap.set(propertyKey, false));
         }
         return target.___data[propertyKey];
       },
@@ -205,7 +223,9 @@ export function Outbound(
         if (!target.___data) target.___data = {};
         target.loading.set(propertyKey, false);
         if (sortBy && val) val = val.sort(sortBy);
-        return (target.___data[propertyKey] = val);
+        target.___data[propertyKey] = val;
+        bumpTick(target, propertyKey);
+        return val;
       }
     };
     target[propertyKey] = obj;
