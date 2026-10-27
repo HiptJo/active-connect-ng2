@@ -1,5 +1,7 @@
+import { signal, untracked } from '@angular/core';
 import { Observable, Observer } from 'rxjs';
 import { WebsocketClient } from '../client';
+import { defer, ensureLoadingMap } from '../reactivity';
 
 export interface IdObject {
   id: number | null | undefined;
@@ -15,7 +17,7 @@ export class OutboundObject<T extends IdObject> {
     private initialLoadingCount?: number,
     private sortBy?: (a: T, b: T) => number
   ) {
-    this.target.loading = new Map<string, boolean>();
+    ensureLoadingMap(this.target);
 
     if (this.client.dbService) {
       try {
@@ -228,7 +230,17 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private dataMap: Map<number | null | undefined, T> = new Map();
-  private data: T[] | undefined = undefined;
+
+  // State that templates can read is signal-backed so OnPush / zoneless
+  // components re-render when websocket data arrives.
+  private readonly _dataSig = signal<T[] | undefined>(undefined);
+  private get data(): T[] | undefined {
+    // internal reads never register a dependency
+    return untracked(this._dataSig);
+  }
+  private set data(value: T[] | undefined) {
+    this._dataSig.set(value);
+  }
 
   public get(id: number): Observable<T> {
     if (
@@ -329,10 +341,26 @@ export class OutboundObject<T extends IdObject> {
   }
 
   public get all(): T[] | undefined {
-    if (!this.requested && this.lazyLoaded) {
-      this.load().then();
-    }
-    return this.data;
+    this.ensureLoaded();
+    return this._dataSig();
+  }
+
+  private loadScheduled = false;
+  /**
+   * `all` is read from templates, where signals must not be written. The lazy
+   * load (which flips loading state) is therefore started after rendering.
+   */
+  private ensureLoaded() {
+    if (this.requested || !this.lazyLoaded || this.loadScheduled) return;
+    this.loadScheduled = true;
+    defer(() => {
+      this.loadScheduled = false;
+      if (!this.requested) {
+        this.load().catch((e) =>
+          console.error('ActiveConnect: lazy load failed', e)
+        );
+      }
+    });
   }
 
   private requested: boolean = false;
@@ -362,20 +390,32 @@ export class OutboundObject<T extends IdObject> {
     }
   }
 
-  private _loading = false;
+  private readonly _loadingSig = signal(false);
+  private get _loading(): boolean {
+    return untracked(this._loadingSig);
+  }
+  private set _loading(value: boolean) {
+    this._loadingSig.set(value);
+  }
   private set loading(value: boolean) {
     this._loading = value;
     this.target.loading.set(this.method, value);
   }
   public get loading(): boolean {
-    return this._loading;
+    return this._loadingSig();
   }
   public get loadedLength(): number {
-    return this.data?.length || 0;
+    return this._dataSig()?.length || 0;
   }
-  private _length: number | undefined = undefined;
+  private readonly _lengthSig = signal<number | undefined>(undefined);
+  private get _length(): number | undefined {
+    return untracked(this._lengthSig);
+  }
+  private set _length(value: number | undefined) {
+    this._lengthSig.set(value);
+  }
   public get length(): number | undefined {
-    return this._length;
+    return this._lengthSig();
   }
 
   private requestedId: number | null = null;
@@ -403,17 +443,20 @@ export class OutboundObject<T extends IdObject> {
   }
 
   private setData(data: T[] | { added: T[] | undefined; length: number }) {
-    this.data = data as T[];
-    if (this.data && this.sortBy) this.data = this.data.sort(this.sortBy);
-    this._length = data.length;
+    const incoming = data as T[];
+    if (this.sortBy) incoming.sort(this.sortBy);
+    // always publish a new array reference so signal consumers are notified
+    const next = [...incoming];
+    this._length = next.length;
     this.dataMap = new Map();
-    this.data.forEach((d) => {
+    next.forEach((d) => {
       this.dataMap.set(d.id, d);
     });
+    this.data = next;
   }
 
   get isEmpty() {
-    return this.data == undefined;
+    return this._dataSig() == undefined;
   }
 
   /**
@@ -422,9 +465,11 @@ export class OutboundObject<T extends IdObject> {
   public update(callback: (data: T[]) => void) {
     if (this.data) {
       const updateLengthVariable = this.data.length == this._length;
-      const length = this.length;
-      callback(this.data);
-      this.setData(this.data);
+      const length = this._length;
+      // work on a copy: a new array reference is what notifies signal consumers
+      const copy = [...this.data];
+      callback(copy);
+      this.setData(copy);
       if (!updateLengthVariable) {
         this._length = length;
       }

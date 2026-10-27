@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
 import { DecorableFunction } from './decorators/function';
 import { JsonParser } from './json/json-parser';
@@ -6,12 +7,22 @@ export class WebsocketClient {
   ws!: WebSocket;
   pool!: { WssConnected: boolean } | null;
 
+  /**
+   * Connection state as a signal, so `isConnected` can be used in OnPush /
+   * zoneless templates (a socket's readyState alone is not observable).
+   */
+  private readonly _connected = signal(false);
+
   constructor(
     private url?: string,
     private supportsCache?: boolean,
     public dbService?: NgxIndexedDBService
   ) {
     if (supportsCache) this.initCache();
+    // No websocket during server-side rendering / prerendering.
+    if (typeof document === 'undefined' || typeof WebSocket === 'undefined') {
+      return;
+    }
     this.setUrl(this.url);
   }
 
@@ -57,7 +68,7 @@ export class WebsocketClient {
   }
 
   public initTabSuspendedListener() {
-    if (document) {
+    if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           console.log(
@@ -85,14 +96,23 @@ export class WebsocketClient {
   private _token = '';
   public get Token(): string {
     if (!this._token) {
-      if (window.localStorage)
-        this._token = window.localStorage.getItem('token') || '';
+      try {
+        if (typeof window !== 'undefined' && window.localStorage)
+          this._token = window.localStorage.getItem('token') || '';
+      } catch {
+        // storage unavailable (SSR, privacy mode)
+      }
     }
     return this._token;
   }
   public set Token(val: string) {
     this._token = val;
-    if (window.localStorage) window.localStorage.setItem('token', val);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage)
+        window.localStorage.setItem('token', val);
+    } catch {
+      // storage unavailable (SSR, privacy mode)
+    }
   }
 
   private set Connected(value: boolean) {
@@ -204,6 +224,7 @@ export class WebsocketClient {
     };
     this.ws.onopen = () => {
       this.clearHandshakeTimer();
+      this._connected.set(true);
       this.logEntry('TCP/HTTP:CONNECTED');
       this.Connected = true;
     };
@@ -222,6 +243,7 @@ export class WebsocketClient {
     };
     this.ws.onclose = () => {
       this.clearHandshakeTimer();
+      this._connected.set(false);
       this.logEntry('TCP/HTTP:CLOSED');
       if (!this.closed) {
         if (this.pool && this.pool.WssConnected) this.pool.WssConnected = false;
@@ -433,6 +455,7 @@ export class WebsocketClient {
   }
 
   public get isConnected(): boolean {
+    this._connected(); // register a signal dependency for templates / computed
     if (this.ws) return this.ws.readyState == WebSocket.OPEN;
     return true;
   }
@@ -524,13 +547,14 @@ export class WebsocketClient {
   public closed = false;
   public disconnect(restart?: boolean) {
     this.closed = true;
+    this._connected.set(false);
 
     this.clearReconnectTimer();
     this.clearHandshakeTimer();
 
     if (this.ws) this.ws.close();
 
-    if (!restart) {
+    if (!restart && this.ws) {
       this.ws.onopen = null;
       this.ws.onmessage = null;
       this.ws.onerror = null;

@@ -8,3 +8,4 @@ export * from './decorators/websocket/shared';
 export * from './decorators/websocket/websocket-route-service';
 export * from './lifecycle/loading-status';
 export * from './objects/outbound-object';
+export * from './reactivity';

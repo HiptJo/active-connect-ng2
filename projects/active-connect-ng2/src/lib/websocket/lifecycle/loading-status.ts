@@ -1,32 +1,45 @@
 import { WebsocketClient } from '../client';
+import { ensureLoadingMap, ReactiveLoadingMap } from '../reactivity';
 
+/**
+ * Aggregated loading state of all outbounds. The getters are signal-aware, so
+ * they can be used directly in OnPush / zoneless templates.
+ *
+ * Note: the getters never write state themselves (they are evaluated while
+ * templates render). Stale `false` entries are pruned shortly afterwards.
+ */
 export class LoadingStatus extends WebsocketClient {
-  private __proto__: any;
   static loading: Map<string, boolean>;
-  get isLoading(): boolean {
-    // return general loading
-    let anyTrue = false;
-    this.__proto__.loading.forEach((e: boolean) => {
-      anyTrue ||= e;
-    });
-    if (!anyTrue) this.__proto__.loading.clear();
-    return this.__proto__.loading.size > 0;
+
+  // Avoids `__proto__` (and a `__proto__` class field, which breaks under
+  // useDefineForClassFields): the map lives on the concrete client prototype.
+  private get loadingMap(): ReactiveLoadingMap {
+    return ensureLoadingMap(Object.getPrototypeOf(this));
   }
+
+  private countLoading(): number {
+    const map = this.loadingMap;
+    let count = 0;
+    map.forEach((e: boolean) => {
+      if (e) count++;
+    });
+    if (count == 0) map.pruneWhenIdle();
+    return count;
+  }
+
+  get isLoading(): boolean {
+    return this.countLoading() > 0;
+  }
+
   getLoadingMap(): Map<string, boolean> {
-    return this.__proto__.loading;
+    return this.loadingMap;
   }
 
   get getCurrent(): number {
-    let count = 0;
-    this.__proto__.loading.forEach((e: boolean) => {
-      if (e) count++;
-    });
-    if (count == 0) {
-      this.__proto__.loading.clear();
-    }
-    return count;
+    return this.countLoading();
   }
+
   get getTotal(): number {
-    return this.__proto__.loading.size;
+    return this.countLoading() > 0 ? this.loadingMap.size : 0;
   }
 }
